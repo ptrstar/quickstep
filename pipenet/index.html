@@ -1,0 +1,73 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>PipeNet</title>
+
+    <link rel="stylesheet" href="style.css">
+    <link href="https://fonts.googleapis.com/css2?family=Roboto+Mono&display=swap" rel="stylesheet">
+    <!-- <script src="https://cdnjs.cloudflare.com/ajax/libs/p5.js/1.11.2/p5.min.js" integrity="sha512-1YMgn4j8cIL91s14ByDGmHtBU6+F8bWOMcF47S0cRO3QNm8SKPNexy4s3OCim9fABUtO++nJMtcpWbINWjMSzQ==" crossorigin="anonymous" referrerpolicy="no-referrer"></script> -->
+    <script src="https://unpkg.com/opentype.js"></script>
+
+
+
+    <script src="js/UNIT.js"></script>
+    <script src="js/NET.js"></script>
+
+    <script src="js/stages/StageNode.js"></script>
+    <script src="js/stages/ImageLoader.js"></script>
+    <script src="js/stages/RGBA2GS.js"></script>
+    <script src="js/stages/InvertGS.js"></script>
+    <script src="js/stages/InvertRGBA.js"></script>
+    <script src="js/stages/AmplifyLine.js"></script>
+    <script src="js/stages/LineDisplay.js"></script>
+    <script src="js/stages/CreateGS.js"></script>
+    <script src="js/stages/ShiftGS.js"></script>
+    <script src="js/stages/AmplifySpiral.js"></script>
+    <script src="js/stages/ContrastGS.js"></script>
+    <script src="js/stages/BoxBlurGS.js"></script>
+    <script src="js/stages/SubtractGS.js"></script>
+    <script src="js/stages/AddGS.js"></script>
+    <script src="js/stages/Text.js"></script>
+    <script src="js/stages/Textarea.js"></script>
+    <script src="js/stages/AddLine.js"></script>
+    <script src="js/stages/AbstSpiral.js"></script>
+    <script src="js/stages/PostcardBack.js"></script>
+    <script src="js/stages/TransformLine.js"></script>
+    
+
+    <script src="js/graphics/Point.js"></script>
+    <script src="js/graphics/Line.js"></script>
+
+    <script src="js/types/GS.js"></script>
+    <script src="js/types/RGBA.js"></script>
+
+</head>
+<body>
+
+    <div id="top">
+        <div id="pipelineContainer">
+
+        </div>
+        <div id="overview">
+            <h1>PipeNet</h1>
+
+            <div id="controls">
+                
+            </div>
+
+            <canvas id="finalCanvas"
+        </div>
+    </div>
+
+    <canvas id="pipelineConnectionCanvas"></canvas>
+    <script defer src="js/index.js"></script>
+
+    <!-- <script> // RIDICILOUSLY enough this snipped is required to make p5 work
+        function setup() {}
+    </script> -->
+    
+    
+</body>
+</html>

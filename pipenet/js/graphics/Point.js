@@ -17,6 +17,10 @@ class Point {
     add(other) {
         return new Point(this.x + other.x, this.y + other.y);
     }
+    _add(other) {
+        this.x += other.x;
+        this.y += other.y;
+    }
 
     round() {
         return new Point(Math.round(this.x), Math.round(this.y));      

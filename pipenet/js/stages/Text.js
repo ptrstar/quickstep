@@ -5,164 +5,39 @@ class Text extends StageNode {
         this.inputType = "void";
         this.outputType = "Line[]";
 
-        this.fontSize = 35;
-        this.spacing = 1;
+        this.fontSize = 12;
         this.xOffset = 0;
-        this.yOffset = 0;
+        this.yOffset = 50;
         this.text = "";
 
-        this.getFontFiles();
-        this.loadFont('/assets/Vegan.ttf');
-        this.ttfFiles = null;
         this.font = null;
-
-        // var standard = {
-        //     'a' : [],
-        //     'b' : [],
-        //     'c' : [],
-        //     'd' : [],
-        //     'e' : [],
-        //     'f' : [],
-        //     'g' : [],
-        //     'h' : [],
-        //     'i' : [],
-        //     'j' : [],
-        //     'k' : [],
-        //     'l' : [],
-        //     'm' : [],
-        //     'n' : [],
-        //     'o' : [],
-        //     'p' : [],
-        //     'q' : [],
-        //     'r' : [],
-        //     's' : [],
-        //     't' : [],
-        //     'u' : [],
-        //     'v' : [],
-        //     'w' : [],
-        //     'x' : [],
-        //     'y' : [],
-        //     'z' : [],
-        //     'A' : [[[0,3], [0,1], [1,0], [2,1], [2,3]], [[0,2], [2,2]]],
-        //     'B' : [],
-        //     'C' : [],
-        //     'D' : [],
-        //     'E' : [],
-        //     'F' : [],
-        //     'G' : [],
-        //     'H' : [],
-        //     'I' : [],
-        //     'J' : [],
-        //     'K' : [],
-        //     'L' : [],
-        //     'M' : [],
-        //     'N' : [],
-        //     'O' : [],
-        //     'P' : [],
-        //     'Q' : [],
-        //     'R' : [],
-        //     'S' : [],
-        //     'T' : [],
-        //     'U' : [],
-        //     'V' : [],
-        //     'W' : [],
-        //     'X' : [],
-        //     'Y' : [],
-        //     'Z' : [],
-        //     '0' : [],
-        //     '1' : [],
-        //     '2' : [],
-        //     '3' : [],
-        //     '4' : [],
-        //     '5' : [],
-        //     '6' : [],
-        //     '7' : [],
-        //     '8' : [],
-        //     '9' : [],
-        //     ' ' : [],
-        //     '.' : [],
-        //     ',' : [],
-
-        // };
+        this.setFonts();
     }
 
-    async loadFont(path) {
-        try {
-            const response = await fetch(path);
-            if (!response.ok) {
-                throw new Error(`Failed to load font at ${path}: ${response.statusText}`);
-            }
-            const arrayBuffer = await response.arrayBuffer();
-            this.font = opentype.parse(arrayBuffer);
-            this.compute();
-            this.preview();
-        } catch (error) {
-            console.error("Error loading font:", error);
-        }
-    }
+    async setFonts() {
 
-    async getFontFiles() {
-        try {
-            const response = await fetch('/assets/');
-            if (!response.ok) {
-                throw new Error(`Failed to fetch assets directory: ${response.statusText}`);
-            }
-            const text = await response.text();
-    
-            const parser = new DOMParser();
-            const doc = parser.parseFromString(text, "text/html");
-            const links = Array.from(doc.querySelectorAll('a'));
-            const ttfFiles = links
-                .map(link => link.getAttribute('href'))
-                .filter(href => href && href.endsWith('.ttf'));
-    
-            this.ttfFiles = ttfFiles;
+        const fontPaths = Fontparser.getFonts();
+        this.font = fontPaths[0];
 
-            const select = document.createElement("select");
-            select.onclick = (event) => event.stopPropagation();
-            select.onchange = (event) => Net.handleEvent(`${this.id}`, 'font', event);
-            this.ttfFiles.forEach(file => {
-                const option = document.createElement("option");
-                option.value = file;
-                option.textContent = file.split('/').pop();
-                select.appendChild(option);
-            });
-            this.controlbox.appendChild(select);
-
-        } catch (error) {
-            console.error("Error fetching font files:", error);
-        }
+        const select = document.createElement("select");
+        select.onclick = (event) => event.stopPropagation();
+        select.onchange = (event) => Net.handleEvent(`${this.id}`, 'font', event);
+        fontPaths.forEach(file => {
+            const option = document.createElement("option");
+            option.value = file;
+            option.textContent = file.split('/').pop();
+            select.appendChild(option);
+        });
+        this.controlbox.appendChild(select);
     }
 
     compute() {
 
-        this.output = [];
-        //compute
-        
-        let paths = this.font.getPaths(this.text, this.xOffset, this.yOffset, this.fontSize);
+        this.output = Fontparser.parse(this.text, this.font, this.fontSize);
 
-        paths.forEach(path => {
-            var line = new Line();
-            
-            path.commands.forEach(command => {
-                if (command.type == "M" || command.type == "L" || command.type == "Q") {
-                    line.push(new Point(command.x, command.y));
-                } else if (command.type == "Z") {
-                    this.output.push(line);
-                    line = new Line();
-                }
-            })
-
-            this.output.push(line);
+        this.output.forEach(line => {
+            line.offset(new Point(this.xOffset, this.yOffset));
         });
-
-        // let points = this.font.textToPoints(char, this.xOffset + this.fontSize * this.spacing * i, this.yOffset, this.fontSize, { sampleFactor:  0.5 });
-        // points.forEach(point => {
-        //     line.push(new Point(point.x, point.y));
-        // })
-        // this.output.push(line);
-        // i++;
-        
 
         this.preview();
         this.setBusy(false);
@@ -197,30 +72,23 @@ class Text extends StageNode {
                 oninput="Net.handleEvent('${this.id}', 'text', event)"></input>
             <input 
                 type="range" 
-                min="6" 
-                max="50" 
-                step="2"
+                min="2" 
+                max="40" 
+                step="1"
                 value="${this.fontSize}"
                 oninput="Net.handleEvent('${this.id}', 'fontSize', event)">FontSize</input>
             <input 
                 type="range" 
                 min="0" 
-                max="4" 
-                step="0.2"
-                value="${this.spacing}"
-                oninput="Net.handleEvent('${this.id}', 'spacing', event)">Spacing</input>
-            <input 
-                type="range" 
-                min="0" 
-                max="100" 
-                step="5"
+                max="${Unit.mmSize.x}" 
+                step="${Unit.mmSize.x/100}"
                 value="${this.xOffset}"
                 oninput="Net.handleEvent('${this.id}', 'xOffset', event)">xOffset</input>
             <input 
                 type="range" 
                 min="0" 
-                max="100" 
-                step="5"
+                max="${Unit.mmSize.y}" 
+                step="${Unit.mmSize.x/100}"
                 value="${this.yOffset}"
                 oninput="Net.handleEvent('${this.id}', 'yOffset', event)">yOffset</input>
 
@@ -235,9 +103,6 @@ class Text extends StageNode {
             case "fontSize":
                 this.fontSize = parseInt(event.target.value);
                 break;
-            case "spacing":
-                this.spacing = parseFloat(event.target.value);
-                break;
             case "xOffset":
                 this.xOffset = parseInt(event.target.value);
                 break;
@@ -248,7 +113,7 @@ class Text extends StageNode {
                 this.run();
                 break;
             case "font":
-                this.loadFont(event.target.value);
+                this.font = event.target.value;
                 break;
         }
         this.run();

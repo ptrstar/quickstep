@@ -1,7 +1,7 @@
 class FONTPARSER {
     constructor() {
 
-        this.filePaths = [];
+        this.filePaths = null;
         this.fonts = new Map();
     }
 
@@ -10,7 +10,7 @@ class FONTPARSER {
     }
 
     // parses text string and returns an array of lines
-    parse(text, fontPath, spacing = 12) {
+    parse(text, fontPath = "/quickstep/assets/Vegan.ttf", size = 12, verticalSpacingFactor = 1) {
 
         const font = this.fonts.get(fontPath);
 
@@ -19,14 +19,14 @@ class FONTPARSER {
         let lines = text.split('\n');
         let result = [];
         lines.forEach((line, index) => {
-            let p = font.getPaths(line, 0, index * spacing, 12);
+            let p = font.getPaths(line, 0, index * verticalSpacingFactor * size, size);
             p.forEach((path) => {
                 var line = new Line();
                 path.commands.forEach(command => {
                     if (command.type == "M" || command.type == "L" || command.type == "Q") {
                         line.push(new Point(command.x, command.y));
                     } else if (command.type == "Z") {
-                        this.output.push(line);
+                        result.push(line);
                         line = new Line();
                     }
                 });

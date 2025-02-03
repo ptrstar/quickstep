@@ -4,16 +4,24 @@ class TransformLine extends StageNode {
 
         this.inputType = "Line[]";
         this.outputType = "Line[]";
+
+        this.angle = 0;
+        this.axisAlign = false;
     }
 
     compute() {
 
         this.output = [];
 
+        var [min, max] = getBoundingBox(this.input);
+
+        var theta = this.angle;
+        if (this.axisAlign) theta = (Math.round((this.angle / (Math.PI * 2)) * 4) / 4) * Math.PI * 2;
+
         this.input.forEach(line => {
             var new_line = new Line();
             line.buffer.forEach(point => {
-                new_line.push(new Point(-point.y, point.x));
+                new_line.push(new Point(((point.x - min.x) * Math.cos(theta) + (point.y - min.y) * -Math.sin(theta)) + min.x, ((point.x - min.x) * Math.sin(theta) + (point.y - min.y) * Math.cos(theta)) + min.y));
             });
             this.output.push(new_line);
         });
@@ -44,18 +52,26 @@ class TransformLine extends StageNode {
     }
     getControlTemplate() {
         return `
+            <input 
+                type="range" 
+                min="0" 
+                max="${2*Math.PI}" 
+                step="${2*Math.PI / 100}"
+                value="${this.angle}"
+                oninput="Net.handleEvent('${this.id}', 'angle', event)">Angle</input>
 
+            <button onclick="Net.handleEvent('${this.id}', 'axisAlign', event)">AxisAlign</button>
         `;
     }
     handleEvent(type, event) {
-        // switch(type) {
-        //     case "export":
-        //         this.export();
-        //         break;
-        //     case "sim":
-        //         this.auto_run_sim = !this.auto_run_sim;
-        //         break;
-        // }
+        switch(type) {
+            case "angle":
+                this.angle = parseFloat(event.target.value);
+                break;
+            case "axisAlign":
+                this.axisAlign = !this.axisAlign;
+                break;
+        }
         this.run();
     }
 }

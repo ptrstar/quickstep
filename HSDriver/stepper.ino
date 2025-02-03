@@ -81,7 +81,7 @@ uint16_t IP = 0;
 uint8_t print_head_down = 0;
 uint8_t instr_buffer = 0;
 uint8_t instr_buffer_index = 0;
-uint8_t data_size = 0x08; // amt of bits used per data point, 0: 4 bit signed ints, 1: (default) 8 bit signed ints, 2: 16 bit signed ints
+uint16_t data_size = 0x08; // amt of bits used per data point, 0: 4 bit signed ints, 1: (default) 8 bit signed ints, 2: 16 bit signed ints
 
 const uint16_t instrCount = sizeof(IM) / sizeof(IM[0]);
 
@@ -172,7 +172,7 @@ void i_set_datasize() {
       data_size = 0x04;
       break;
     case 0x01:
-      data_size = 0x04;
+      data_size = 0x08;
       break;
     case 0x02:
       data_size = 0x10;
@@ -181,16 +181,40 @@ void i_set_datasize() {
 }
 
 void i_move() {
-  // Serial.println("i_move()");
-  uint16_t yx = pgm_read_word(&IM[IP]);
-  IP += 2;
+  
+  uint32_t yx;
 
-  const int32_t readY = (int8_t)(yx >> 8);
-  const int32_t readX = (int8_t)(yx & 0xFF);
+  switch (data_size) {
+    case 0x04:
+      yx = pgm_read_byte(&IM[IP]);
+      IP++;
+    case 0x08:
+      yx = pgm_read_word(&IM[IP]);
+      IP += 2;
+    case 0x04:
+      yx = pgm_read_dword(&IM[IP]);
+      IP += 4;
+  }
+  
+  // read data_size many bits for both x and y
+  int32_t readY = (yx >> data_size);
+  int32_t readX = (yx & ((1 << data_size)-1));
 
+  // extend negative numbers eg. for data size = 4
+  // readY = ...00001000 as msb is 1 we need to extend to
+  // readY = ...11111000 to retain the same value
+  if (readY & (1 << (data_size-1))) {
+    readY = readY | ~((1 << data_size)-1);
+  }
+  if (readX & (1 << (data_size-1))) {
+    readX = readX | ~((1 << data_size)-1);
+  }
+
+  // set direction
   digitalWrite(X_DIR, (readX < 0) ? LOW : HIGH);
   digitalWrite(Y_DIR, (readY < 0) ? LOW : HIGH);
 
+  // driver
   uint32_t tarX = abs(readX);
   uint32_t tarY = abs(readY);
   uint64_t posX = 0;
@@ -205,10 +229,6 @@ void i_move() {
 
   uint64_t mtX = tarX * X_MICROSTEPS;
   uint64_t mtY = tarY * Y_MICROSTEPS;
-
-  // Serial.print((unsigned long)mtX);
-  // Serial.print(", ");
-  // Serial.println((unsigned long)mtY);
 
   while (posX != mtX || posY != mtY) {
     current_time = micros() - start_time;

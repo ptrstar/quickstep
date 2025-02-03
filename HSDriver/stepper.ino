@@ -81,7 +81,7 @@ uint16_t IP = 0;
 uint8_t print_head_down = 0;
 uint8_t instr_buffer = 0;
 uint8_t instr_buffer_index = 0;
-uint8_t data_size = 0x01; // 2 lsb's indicating, 0: 4 bit signed ints, 1: (default) 8 bit signed ints, 2: 16 bit signed ints
+uint8_t data_size = 0x08; // amt of bits used per data point, 0: 4 bit signed ints, 1: (default) 8 bit signed ints, 2: 16 bit signed ints
 
 const uint16_t instrCount = sizeof(IM) / sizeof(IM[0]);
 
@@ -136,7 +136,7 @@ void loop() {
       i_toggle_printhead();
       break;
     case 0x01:
-      // i_down();
+      i_set_datasize();
       break;
     case 0x02:
       i_move();
@@ -162,6 +162,21 @@ void i_toggle_printhead() {
   for (uint8_t i = 0; i < LIFT_AMT * Z_MICROSTEPS; i++) {
     drive(Z_STEP);
     delay(max(2, 1000/MAX_SPEED));
+  }
+}
+
+void i_set_datasize() {
+  uint8_t instr = fetch_instr();
+  switch(instr) {
+    case 0x00;
+      data_size = 0x04;
+      break;
+    case 0x01:
+      data_size = 0x04;
+      break;
+    case 0x02:
+      data_size = 0x10;
+      break;
   }
 }
 

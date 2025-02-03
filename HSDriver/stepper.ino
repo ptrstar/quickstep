@@ -78,6 +78,11 @@ const uint8_t IM[] PROGMEM = {
 
 
 uint16_t IP = 0;
+uint8_t print_head_down = 0;
+uint8_t instr_buffer = 0;
+uint8_t instr_buffer_index = 0;
+uint8_t data_size = 0x01; // 2 lsb's indicating, 0: 4 bit signed ints, 1: (default) 8 bit signed ints, 2: 16 bit signed ints
+
 const uint16_t instrCount = sizeof(IM) / sizeof(IM[0]);
 
 void setup() {
@@ -104,6 +109,20 @@ void setup() {
   // Serial.begin(9600);
   delay(1500);
   // Serial.println("START");
+}
+
+uint8_t fetch_instr() {
+  // load new instruction
+  if (instr_buffer_index == 0) {
+    instr_buffer = pgm_read_byte(&IM[IP]);
+    IP++;
+    instr_buffer_index = 4; 
+  }
+  uint8_t mask = 0x03;
+  uint8_t instr = mask & instr_buffer;
+  instr_buffer = instr_buffer >> 2;
+  instr_buffer_index--;
+  return instr;
 }
 
 void loop() {

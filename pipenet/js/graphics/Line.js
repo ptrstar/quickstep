@@ -22,8 +22,9 @@ class Line {
         this.first = this.buffer[0];
     }
 
-    offset(point) {
+    _offset(point) {
         this.buffer.forEach(p => p._add(point));
+        return this;
     }
 
     isEmpty() {

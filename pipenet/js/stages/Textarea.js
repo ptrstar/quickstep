@@ -37,7 +37,7 @@ class Textarea extends StageNode {
         this.output = Fontparser.parse(this.text, this.font, this.fontSize, this.verticalSpacing);
 
         this.output.forEach(line => {
-            line.offset(new Point(this.xOffset, this.yOffset));
+            line._offset(new Point(this.xOffset, this.yOffset));
         });
 
         this.preview();

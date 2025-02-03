@@ -129,15 +129,14 @@ void loop() {
 
   if (IP >= instrCount) return;
 
-  uint8_t instr = pgm_read_byte(&IM[IP]);
-  IP++;
+  uint8_t instr = fetch_instr();
 
   switch(instr) {
     case 0x00:
-      i_up();
+      i_toggle_printhead();
       break;
     case 0x01:
-      i_down();
+      // i_down();
       break;
     case 0x02:
       i_move();
@@ -153,22 +152,19 @@ void drive(int pin) {
   digitalWrite(pin, LOW);
 }
 
-void i_up() {
-  // Serial.println("i_up()");
-  digitalWrite(Z_DIR, LOW);
+void i_toggle_printhead() {
+  if (print_head_down) {
+    digitalWrite(Z_DIR, LOW);
+  } else {
+    digitalWrite(Z_DIR, HIGH);
+  }
+  print_head_down = !print_head_down;
   for (uint8_t i = 0; i < LIFT_AMT * Z_MICROSTEPS; i++) {
     drive(Z_STEP);
     delay(max(2, 1000/MAX_SPEED));
   }
 }
-void i_down() {
-  // Serial.println("i_down()");
-  digitalWrite(Z_DIR, HIGH);
-  for (uint8_t i = 0; i < LIFT_AMT * Z_MICROSTEPS; i++) {
-    drive(Z_STEP);
-    delay(max(2, 1000/MAX_SPEED));
-  }
-}
+
 void i_move() {
   // Serial.println("i_move()");
   uint16_t yx = pgm_read_word(&IM[IP]);

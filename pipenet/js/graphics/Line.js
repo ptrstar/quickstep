@@ -30,4 +30,9 @@ class Line {
         return !this.buffer.length;
     }
 
+    transform(theta, center) {
+        var line = new Line(this.penWidth);
+        this.buffer.forEach(point => line.push(point.transform(theta, center)));
+        return line;
+    }
 }

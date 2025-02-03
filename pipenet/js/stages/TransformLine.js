@@ -19,11 +19,7 @@ class TransformLine extends StageNode {
         if (this.axisAlign) theta = (Math.round((this.angle / (Math.PI * 2)) * 4) / 4) * Math.PI * 2;
 
         this.input.forEach(line => {
-            var new_line = new Line();
-            line.buffer.forEach(point => {
-                new_line.push(new Point(((point.x - min.x) * Math.cos(theta) + (point.y - min.y) * -Math.sin(theta)) + min.x, ((point.x - min.x) * Math.sin(theta) + (point.y - min.y) * Math.cos(theta)) + min.y));
-            });
-            this.output.push(new_line);
+            this.output.push(line.transform(theta, min));
         });
 
         this.preview();

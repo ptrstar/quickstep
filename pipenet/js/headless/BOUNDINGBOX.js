@@ -6,8 +6,8 @@ function getBoundingBox(lines) {
         line.buffer.forEach(point => {
             if (point.x < min.x) min.x = point.x;
             if (point.y < min.y) min.y = point.y;
-            if (point.x > min.x) max.x = point.x;
-            if (point.y > min.y) max.y = point.y;
+            if (point.x > max.x) max.x = point.x;
+            if (point.y > max.y) max.y = point.y;
         });
     });
 

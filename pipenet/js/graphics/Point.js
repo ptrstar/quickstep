@@ -29,4 +29,8 @@ class Point {
     clone() {
         return new Point(this.x, this.y);
     }
+
+    transform(theta, center) {
+        return new Point(((this.x - center.x) * Math.cos(theta) + (this.y - center.y) * -Math.sin(theta)) + center.x, ((this.x - center.x) * Math.sin(theta) + (this.y - center.y) * Math.cos(theta)) + center.y)
+    }
 }

@@ -47,13 +47,12 @@ class LineDisplay extends StageNode {
             });
             this.ctx.stroke();
         });
-
-        
-
-
     }
 
     sim(instr_str) {
+
+        // FIXME: rewrite converted to compressed format
+
         var instr_array = instr_str.trim().split(",");
         this.ctx.strokeStyle = "red";
         this.ctx.lineWidth = Unit.mm2pix(0.35) * this.finalscale;
@@ -73,8 +72,8 @@ class LineDisplay extends StageNode {
                     this.ctx.moveTo(Unit.mm2pix(1/Unit.mm2xstep*(pos.x)), Unit.mm2pix(1/Unit.mm2ystep*(pos.y)));
                     break;
                 case "0x02":
-                    var dx = this.BitHexToInt8(instr_array[++i].trim());
-                    var dy = this.BitHexToInt8(instr_array[++i].trim());
+                    var dx = Quickstep.BitHexToInt8(instr_array[++i].trim());
+                    var dy = Quickstep.BitHexToInt8(instr_array[++i].trim());
                     var x = Unit.mm2pix(1/Unit.mm2xstep*(pos.x + dx));
                     var y = Unit.mm2pix(1/Unit.mm2ystep*(pos.y + dy));
                     this.ctx.lineTo(x, y);
@@ -89,39 +88,8 @@ class LineDisplay extends StageNode {
 
     gen_instr() {
         var prog_prefix = "const uint8_t IM[] PROGMEM = {\n";
-        var instr_stream = "";
         var prog_suffix = "\n};"
-
-        var prev_step = new Point();
-
-        this.output.forEach(line => {
-            if (line.isEmpty()) return;
-
-            var step = line.first.unpropscale(Unit.mm2xstep, Unit.mm2ystep).round();
-            var target = step.sub(prev_step);
-            instr_stream += this.moveTo(target);
-            prev_step = step;
-            instr_stream += "0x01,";
-
-            line.buffer.forEach(point => {
-
-                var step = point.unpropscale(Unit.mm2xstep, Unit.mm2ystep).round();
-                var target = step.sub(prev_step);
-                instr_stream += this.moveTo(target);
-                prev_step = step;
-                
-            });
-
-            // var step = line.first.scale(mm2step).round();
-            // var target = step.sub(prev_step);
-            // instr_stream += this.moveTo(target);
-            // prev_step = step;
-
-            instr_stream += "0x00,\n";
-        });
-
-        instr_stream += this.moveTo(prev_step.scale(-1));
-        instr_stream += "0x03";
+        var instr_stream = Quickstep.convert(this.output);
 
         var count_bytes = (instr_stream.match(/0x/g) || []).length;
         this.setStatus(count_bytes + " bytes");
@@ -133,54 +101,6 @@ class LineDisplay extends StageNode {
     export() {
         navigator.clipboard.writeText(this.prog);
         console.log("QUICKSTEP copied to clipboard");
-    }
-
-
-    moveTo(pt) {
-
-        if (pt.round().x != pt.x || pt.round().y != pt.y) {
-            throw new TypeError("point was unrounded", pt);
-        }
-
-        var point = pt.clone();
-
-        var str = "";
-
-        while (point.x != 0 || point.y != 0) {
-
-            const required_instr = Math.max(Math.abs(point.x), Math.abs(point.y)) / (127);
-            const instr_count = Math.ceil(required_instr);
-
-            const dx = Math.floor(point.x / instr_count);
-            const dy = Math.floor(point.y / instr_count);
-
-            str += "0x02," + this.int8ToBitHex(dx) + "," + this.int8ToBitHex(dy) + ",";
-
-            point.x -= dx;
-            point.y -= dy;
-        }
-
-        return str;
-    }
-
-    int8ToBitHex(int8) {
-        if (int8 < -128 || int8 > 127) {
-          throw new RangeError("Input is out of range for int8.");
-        }
-      
-        const unsignedInt8 = int8 < 0 ? 256 + int8 : int8;
-        const binaryString = unsignedInt8.toString(2).padStart(8, '0');
-        const hexString = parseInt(binaryString, 2).toString(16).padStart(2, '0').toUpperCase();
-      
-        return `0x${hexString}`;
-    }
-
-    BitHexToInt8(bitHex) {
-        const hexString = bitHex.slice(2);
-        const binaryString = parseInt(hexString, 16).toString(2).padStart(8, '0');
-        const unsignedInt8 = parseInt(binaryString, 2);
-      
-        return unsignedInt8 > 127 ? unsignedInt8 - 256 : unsignedInt8;
     }
 
 

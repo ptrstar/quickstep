@@ -109,8 +109,8 @@ void i_toggle_printhead() {
 }
 
 void i_set_datasize() {
-  uint8_t instr = fetch_instr();
-  data_size = 0x04 << instr;
+  // set data_size to 0x04, 0x08 or 0x10 respectively
+  data_size = 0x04 << fetch_instr();
 }
 
 void i_move() {

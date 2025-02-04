@@ -110,17 +110,7 @@ void i_toggle_printhead() {
 
 void i_set_datasize() {
   uint8_t instr = fetch_instr();
-  switch(instr) {
-    case 0x00;
-      data_size = 0x04;
-      break;
-    case 0x01:
-      data_size = 0x08;
-      break;
-    case 0x02:
-      data_size = 0x10;
-      break;
-  }
+  data_size = 0x04 << instr;
 }
 
 void i_move() {

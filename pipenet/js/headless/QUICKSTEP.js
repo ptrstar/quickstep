@@ -1,39 +1,98 @@
 class QUICKSTEP {
-    constructor() {}
+    constructor() {
+        this.instr_stream;
+        this.instr_buffer_4;
+        this.data_buffer_4;
+        this.int_size = 8;
+    }
+
+    reset() {
+        this.int_size = 8;
+        this.instr_stream = "";
+        this.instr_buffer_4 = [];
+        this.data_buffer_4 = [];
+    }
 
     convert(buffer) {
 
         // FIXME: rewrite converted to compressed format
 
-        var prev_step = new Point();
+        // Assumption, assume that lines are long and consistent in their step length such that it is a good
+        // enough approximation of the optimal intsize to check line by line
 
+        this.reset();
+
+        var prev_step = new Point();
         buffer.forEach(line => {
             if (line.isEmpty()) return;
+            this.checkIntSize(line);
 
             var step = line.first.unpropscale(Unit.mm2xstep, Unit.mm2ystep).round();
             var target = step.sub(prev_step);
-            instr_stream += this.moveTo(target);
+            this.append_instrbuf_move(this.moveTo(target, intSize));
+            // instr_stream += this.moveTo(target, intSize);
             prev_step = step;
-            instr_stream += "0x01,";
+            this.issue_instr("01");
+            // instr_stream += "0x01,";
 
             line.buffer.forEach(point => {
 
                 var step = point.unpropscale(Unit.mm2xstep, Unit.mm2ystep).round();
                 var target = step.sub(prev_step);
-                instr_stream += this.moveTo(target);
+                this.append_instrbuf_move(this.moveTo(target, intSize));
+                // instr_stream += this.moveTo(target, intSize);
                 prev_step = step;
                 
             });
+            this.issue_instr("00");
+            // instr_stream += "0x00,\n";
+        })
 
-            instr_stream += "0x00,\n";
+        this.append_instrbuf_move(this.moveTo(prev_step.scale(-1), intSize));
+        this.issue_instr("11");
+    }
+    checkIntSize(line) {
+        var intSize = line.getIntSize();
+        if (intSize != this.int_size) {
+            this.issue_instr("01");
+            switch(intSize) {
+                case 4:
+                    this.issue_instr("00");
+                    break;
+                case 8:
+                    this.issue_instr("01");
+                    break;
+                case 16:
+                    this.issue_instr("10");
+                    break;
+                default:
+                    throw new RangeError("unknown intSize: ", intSize);
+            }
+        }
+        this.int_size = intSize;
+    }
+
+    issue_instr(bits) {
+        if (this.instr_buffer_4.length == 4) {
+            this.instr_stream += "0x" + parseInt(this.instr_buffer_4[3] + this.instr_buffer_4[2] + this.instr_buffer_4[1] + this.instr_buffer_4[0], 2).toString(16).toUpperCase() + ",";
+            this.data_buffer_4.forEach(data => {
+                this.instr_stream += data;
+            });
+
+            this.instr_buffer_4 = [];
+            this.data_buffer_4 = [];
+        }
+        this.instr_buffer_4.push(bits);
+    }
+    append_instrbuf_move(buffer) {
+        buffer.forEach(segment => {
+            this.issue_instr("10");
+            this.data_buffer_4.push(segment);
         });
-
-        instr_stream += this.moveTo(prev_step.scale(-1));
-        instr_stream += "0x03";
     }
 
 
-    moveTo(pt) {
+    moveTo(pt, intSize) {
 
         if (pt.round().x != pt.x || pt.round().y != pt.y) {
             throw new TypeError("point was unrounded", pt);
@@ -41,7 +100,7 @@ class QUICKSTEP {
 
         var point = pt.clone();
 
-        var str = "";
+        var str = [];
 
         while (point.x != 0 || point.y != 0) {
 
@@ -51,8 +110,19 @@ class QUICKSTEP {
             const dx = Math.floor(point.x / instr_count);
             const dy = Math.floor(point.y / instr_count);
 
-            str += "0x02," + this.int8ToBitHex(dx) + "," + this.int8ToBitHex(dy) + ",";
-
+            switch (intSize) {
+                case 4:
+                    str.push(this.int4ToBitHex(dx, dy) + ",");
+                    break;
+                case 8:
+                    str.push(this.int8ToBitHex(dx) + "," + this.int8ToBitHex(dy) + ",");
+                    break;
+                case 16:
+                    str.push(this.int16ToBitHex(dx) + "," + this.int16ToBitHex(dy) + ",");
+                    break;
+                default:
+                    throw new RangeError("unknown intSize ", intSize);
+            }
             point.x -= dx;
             point.y -= dy;
         }
@@ -71,12 +141,60 @@ class QUICKSTEP {
       
         return `0x${hexString}`;
     }
-
     BitHexToInt8(bitHex) {
         const hexString = bitHex.slice(2);
         const binaryString = parseInt(hexString, 16).toString(2).padStart(8, '0');
         const unsignedInt8 = parseInt(binaryString, 2);
       
         return unsignedInt8 > 127 ? unsignedInt8 - 256 : unsignedInt8;
+    }
+
+    int4ToBitHex(x, y) {
+        if (x < -8 || x > 7 || y < -8 || y > 7) {
+          throw new RangeError("Input is out of range for int4.");
+        }
+      
+        const unsigned_x = x < 0 ? 16 + x : x;
+        const bin_x = unsigned_x.toString(2).padStart(4, '0');
+        const unsigned_y = y < 0 ? 16 + y : y;
+        const bin_y = unsigned_y.toString(2).padStart(4, '0');
+
+        // NOTE: putting y first is an attempt to maintain consistency across int sizes
+        const hexString = parseInt(bin_y, 2).toString(16).padStart(1, '0').toUpperCase() + parseInt(bin_x, 2).toString(16).padStart(1, '0').toUpperCase();
+      
+        return `0x${hexString}`;
+    }
+    bitHexToInt4(hex) {
+    
+        const hexString = hex.slice(2); // Remove '0x'
+        const intVal = parseInt(hexString, 16);
+    
+        const bin_y = (intVal >> 4) & 0xF; // Extract high 4 bits
+        const bin_x = intVal & 0xF; // Extract low 4 bits
+    
+        // Convert back to signed int4
+        const y = bin_y >= 8 ? bin_y - 16 : bin_y;
+        const x = bin_x >= 8 ? bin_x - 16 : bin_x;
+        
+        return [x, y];
+    }
+    
+    int16ToBitHex(int16) {
+        if (int16 < -32768 || int16 > 32767) {
+          throw new RangeError("Input is out of range for int8.");
+        }
+      
+        const unsigned = int16 < 0 ? 65536 + int16 : int16;
+        const bin = unsigned.toString(2).padStart(16, '0');
+        const hex = parseInt(bin, 2).toString(16).padStart(4, '0').toUpperCase();
+      
+        return `0x${hex}`;
+    }
+    BitHexToInt16(bitHex) {
+        const hex = bitHex.slice(2);
+        const bin = parseInt(hex, 16).toString(2).padStart(8, '0');
+        const unsigned = parseInt(bin, 2);
+      
+        return unsigned > 32767 ? unsigned - 65536 : unsigned;
     }
 }

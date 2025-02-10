@@ -124,7 +124,7 @@ void i_move() {
     case 0x08:
       yx = pgm_read_word(&IM[IP]);
       IP += 2;
-    case 0x04:
+    case 0x10:
       yx = pgm_read_dword(&IM[IP]);
       IP += 4;
   }

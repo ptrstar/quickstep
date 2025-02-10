@@ -36,4 +36,22 @@ class Line {
         this.buffer.forEach(point => line.push(point.transform(theta, center)));
         return line;
     }
+
+    getIntSize() {
+        var count = 0;
+        var sigma = 0;
+        this.buffer.forEach(point => {
+            sigma += Math.max(Math.abs(point.x), Math.abs(point.y));
+        })
+        var avg = sigma / count;
+        
+        // TODO: Find theoretical optimum for the following
+        if (avg <= 8) {
+            return 4;
+        }
+        if (avg <= 256) {
+            return 8;
+        }
+        return 16;
+    }
 }

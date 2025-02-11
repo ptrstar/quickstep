@@ -9,11 +9,11 @@ class LineDisplay extends StageNode {
         this.auto_run_sim = true;
 
         //DEBUG ONLY
-        var line = new Line();
-        this.input = [line];
-        for (var theta = 0; theta <= 2*Math.PI; theta += 2*Math.PI / 100) {
-            line.push(new Point(Math.sin(theta) * 20 + 25, Math.cos(theta) * 20 + 25));
-        }
+        // var line = new Line();
+        // this.input = [line];
+        // for (var theta = 0; theta <= 2*Math.PI; theta += 2*Math.PI / 100) {
+        //     line.push(new Point(Math.sin(theta) * 30 + 40, Math.cos(theta) * 30 + 40));
+        // }
     }
 
     compute() {
@@ -51,37 +51,84 @@ class LineDisplay extends StageNode {
 
     sim(instr_str) {
 
-        // FIXME: rewrite converted to compressed format
+        var IM = instr_str.replace(/0x|,|\s/g, "");
 
-        var instr_array = instr_str.trim().split(",");
+        var IM_bits = Quickstep.hexToBits(IM);
+
+        var printhead_down = false;
+        var instr_buffer = "";
+        var instr_buffer_index = 0;
+        var data_size = 8;
+        var IP = 0;
+
         this.ctx.strokeStyle = "red";
         this.ctx.lineWidth = Unit.mm2pix(0.35) * this.finalscale;
         
         var pos = new Point(0,0);
 
-        for (var i = 0; i < instr_array.length; i++) {
-
-            const instr = instr_array[i].trim();
+        while(true) {
+            if (instr_buffer_index == 0) {
+                instr_buffer_index = 4;
+                instr_buffer = IM_bits.slice(IP, IP + 8);
+                IP += 8;
+            }
+            var instr = instr_buffer.slice(instr_buffer_index * 2 - 2, instr_buffer_index * 2);
+            instr_buffer_index--;
 
             switch(instr) {
-                case "0x00":
-                    this.ctx.stroke();
+                case "00":
+                    if (printhead_down) {
+                        this.ctx.stroke();
+                    } else {
+                        this.ctx.beginPath();
+                        this.ctx.moveTo(Unit.mm2pix(1/Unit.mm2xstep*(pos.x)), Unit.mm2pix(1/Unit.mm2ystep*(pos.y)));
+                    }
+                    printhead_down = !printhead_down;
                     break;
-                case "0x01":
-                    this.ctx.beginPath();
-                    this.ctx.moveTo(Unit.mm2pix(1/Unit.mm2xstep*(pos.x)), Unit.mm2pix(1/Unit.mm2ystep*(pos.y)));
+                case "01":
+                    if (instr_buffer_index == 0) {
+                        instr_buffer_index = 4;
+                        instr_buffer = IM_bits.slice(IP, IP + 8);
+                        IP += 8;
+                    }
+                    var amt = instr_buffer.slice(instr_buffer_index * 2 - 2, instr_buffer_index * 2);
+                    instr_buffer_index -= 2;
+                    switch (amt) {
+                        case "00":
+                            data_size = 4;
+                        case "01":
+                            data_size = 8;
+                        case "10":
+                            data_size = 16;
+                            break;
+                    }
                     break;
-                case "0x02":
-                    var dx = Quickstep.BitHexToInt8(instr_array[++i].trim());
-                    var dy = Quickstep.BitHexToInt8(instr_array[++i].trim());
+                case "10":
+                    var dx, dy;
+                    switch (data_size) {
+                        case 4:
+                            [dx, dy] = Quickstep.BitHexToInt4("0x"+Quickstep.bitsToHex(IM_bits.slice(IP, IP+8)));
+                            IP += 8;
+                            break;
+                        case 8:
+                            dx = Quickstep.BitHexToInt8("0x"+Quickstep.bitsToHex(IM_bits.slice(IP, IP+8)));
+                            dy = Quickstep.BitHexToInt8("0x"+Quickstep.bitsToHex(IM_bits.slice(IP+8, IP+16)));
+                            IP += 16;
+                            break;
+                        case 16:
+                            dx = Quickstep.BitHexToInt8("0x"+Quickstep.bitsToHex(IM_bits.slice(IP, IP+16)));
+                            dy = Quickstep.BitHexToInt8("0x"+Quickstep.bitsToHex(IM_bits.slice(IP+16, IP+32)));
+                            IP += 32;
+                            break;
+                    }
                     var x = Unit.mm2pix(1/Unit.mm2xstep*(pos.x + dx));
                     var y = Unit.mm2pix(1/Unit.mm2ystep*(pos.y + dy));
                     this.ctx.lineTo(x, y);
                     pos.x += dx;
                     pos.y += dy;
                     break;
-                case "0x03":
-                    break;
+                case "11":
+                    return;
             }
         }
     }
@@ -90,10 +137,11 @@ class LineDisplay extends StageNode {
         var prog_prefix = "const uint8_t IM[] PROGMEM = {\n";
         var prog_suffix = "\n};"
         var instr_stream = Quickstep.convert(this.output);
-        console.log(instr_stream);
 
-        var count_bytes = (instr_stream.match(/0x/g) || []).length;
-        this.setStatus(count_bytes + " bytes");
+        const countBytes = (str) => str.replace(/0x|,|\s/g, "").length / 2;
+
+        var bytes = countBytes(instr_stream);
+        this.setStatus(bytes + " bytes");
 
         this.instr_stream = instr_stream;
         this.prog = prog_prefix + instr_stream + prog_suffix;

@@ -70,7 +70,8 @@ uint8_t fetch_instr() {
 
 void loop() {
 
-  if (IP >= instrCount) return;
+  // line is obsolete (and incorrect since dynamic intsize changes) as "0b11" ends the program
+  // if (IP >= instrCount) return;
 
   uint8_t instr = fetch_instr();
 

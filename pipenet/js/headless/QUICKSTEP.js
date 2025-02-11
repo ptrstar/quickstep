@@ -15,8 +15,6 @@ class QUICKSTEP {
 
     convert(buffer) {
 
-        // FIXME: rewrite converted to compressed format
-
         // Assumption, assume that lines are long and consistent in their step length such that it is a good
         // enough approximation of the optimal intsize to check line by line
 
@@ -137,6 +135,9 @@ class QUICKSTEP {
 
         return str;
     }
+
+    hexToBits = (hex) => [...hex].map(c => parseInt(c, 16).toString(2).padStart(4, '0')).join('');
+    bitsToHex = (bits) => bits.match(/.{4}/g).map(b => parseInt(b, 2).toString(16)).join('');
 
     int8ToBitHex(int8) {
         if (int8 < -128 || int8 > 127) {

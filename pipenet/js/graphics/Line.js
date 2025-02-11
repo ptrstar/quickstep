@@ -40,8 +40,16 @@ class Line {
     getIntSize() {
         var count = 0;
         var sigma = 0;
+        var prev = this.first.unpropscale(Unit.mm2xstep, Unit.mm2ystep);
         this.buffer.forEach(point => {
-            sigma += Math.max(Math.abs(point.x), Math.abs(point.y));
+            if (point == prev) return;
+            
+            var stepped_target = point.unpropscale(Unit.mm2xstep, Unit.mm2ystep);
+            var stepped_delta = prev.sub(stepped_target);
+            sigma += Math.max(Math.abs(stepped_delta.x), Math.abs(stepped_delta.y));
+            count++;
+
+            prev = stepped_target;
         })
         var avg = sigma / count;
         

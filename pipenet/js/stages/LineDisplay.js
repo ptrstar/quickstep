@@ -90,6 +90,7 @@ class LineDisplay extends StageNode {
         var prog_prefix = "const uint8_t IM[] PROGMEM = {\n";
         var prog_suffix = "\n};"
         var instr_stream = Quickstep.convert(this.output);
+        console.log(instr_stream);
 
         var count_bytes = (instr_stream.match(/0x/g) || []).length;
         this.setStatus(count_bytes + " bytes");

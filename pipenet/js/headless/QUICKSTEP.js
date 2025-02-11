@@ -29,30 +29,33 @@ class QUICKSTEP {
 
             var step = line.first.unpropscale(Unit.mm2xstep, Unit.mm2ystep).round();
             var target = step.sub(prev_step);
-            this.append_instrbuf_move(this.moveTo(target, intSize));
-            // instr_stream += this.moveTo(target, intSize);
+            this.append_instrbuf_move(this.moveTo(target));
             prev_step = step;
-            this.issue_instr("01");
-            // instr_stream += "0x01,";
+            this.issue_instr("00");
 
             line.buffer.forEach(point => {
 
                 var step = point.unpropscale(Unit.mm2xstep, Unit.mm2ystep).round();
                 var target = step.sub(prev_step);
-                this.append_instrbuf_move(this.moveTo(target, intSize));
+                this.append_instrbuf_move(this.moveTo(target));
                 // instr_stream += this.moveTo(target, intSize);
                 prev_step = step;
                 
             });
             this.issue_instr("00");
-            // instr_stream += "0x00,\n";
         })
 
-        this.append_instrbuf_move(this.moveTo(prev_step.scale(-1), intSize));
+        this.append_instrbuf_move(this.moveTo(prev_step.scale(-1)));
         this.issue_instr("11");
+
+        // flush the instr_buffer
+        this.issue_instr(undefined);
+
+        return this.instr_stream;
     }
     checkIntSize(line) {
         var intSize = line.getIntSize();
+        console.log(intSize);
         if (intSize != this.int_size) {
             this.issue_instr("01");
             switch(intSize) {
@@ -73,11 +76,16 @@ class QUICKSTEP {
     }
 
     issue_instr(bits) {
-        if (this.instr_buffer_4.length == 4) {
-            this.instr_stream += "0x" + parseInt(this.instr_buffer_4[3] + this.instr_buffer_4[2] + this.instr_buffer_4[1] + this.instr_buffer_4[0], 2).toString(16).toUpperCase() + ",";
+        if (this.instr_buffer_4.length == 4 || bits == undefined) {
+            var temp = "";
+            for (var i = this.instr_buffer_4.length -1; i >= 0; i--) {
+                temp += this.instr_buffer_4[i];
+            }
+            this.instr_stream += "0x" + parseInt(temp.padStart(8, '0'), 2).toString(16).toUpperCase() + ",";
             this.data_buffer_4.forEach(data => {
                 this.instr_stream += data;
             });
+            this.instr_stream += "\n";
 
             this.instr_buffer_4 = [];
             this.data_buffer_4 = [];
@@ -92,7 +100,7 @@ class QUICKSTEP {
     }
 
 
-    moveTo(pt, intSize) {
+    moveTo(pt) {
 
         if (pt.round().x != pt.x || pt.round().y != pt.y) {
             throw new TypeError("point was unrounded", pt);
@@ -104,13 +112,13 @@ class QUICKSTEP {
 
         while (point.x != 0 || point.y != 0) {
 
-            const required_instr = Math.max(Math.abs(point.x), Math.abs(point.y)) / (127);
+            const required_instr = Math.max(Math.abs(point.x), Math.abs(point.y)) / ((1 << (this.int_size-1)) - 1);
             const instr_count = Math.ceil(required_instr);
 
             const dx = Math.floor(point.x / instr_count);
             const dy = Math.floor(point.y / instr_count);
 
-            switch (intSize) {
+            switch (this.int_size) {
                 case 4:
                     str.push(this.int4ToBitHex(dx, dy) + ",");
                     break;
@@ -137,7 +145,7 @@ class QUICKSTEP {
       
         const unsignedInt8 = int8 < 0 ? 256 + int8 : int8;
         const binaryString = unsignedInt8.toString(2).padStart(8, '0');
-        const hexString = parseInt(binaryString, 2).toString(16).padStart(2, '0').toUpperCase();
+        const hexString = parseInt(binaryString, 2).toString(16).padStart(2, '0').toLowerCase();
       
         return `0x${hexString}`;
     }
@@ -160,7 +168,7 @@ class QUICKSTEP {
         const bin_y = unsigned_y.toString(2).padStart(4, '0');
 
         // NOTE: putting y first is an attempt to maintain consistency across int sizes
-        const hexString = parseInt(bin_y, 2).toString(16).padStart(1, '0').toUpperCase() + parseInt(bin_x, 2).toString(16).padStart(1, '0').toUpperCase();
+        const hexString = parseInt(bin_y, 2).toString(16).padStart(1, '0').toLowerCase() + parseInt(bin_x, 2).toString(16).padStart(1, '0').toLowerCase();
       
         return `0x${hexString}`;
     }
@@ -186,7 +194,7 @@ class QUICKSTEP {
       
         const unsigned = int16 < 0 ? 65536 + int16 : int16;
         const bin = unsigned.toString(2).padStart(16, '0');
-        const hex = parseInt(bin, 2).toString(16).padStart(4, '0').toUpperCase();
+        const hex = parseInt(bin, 2).toString(16).padStart(4, '0').toLowerCase();
       
         return `0x${hex}`;
     }

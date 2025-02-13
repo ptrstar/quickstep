@@ -11,21 +11,21 @@ class LineDisplay extends StageNode {
         //DEBUG ONLY
         var line = new Line();
         this.input = [line];
-        for (var theta = 0; theta <= 2*Math.PI; theta += 2*Math.PI / 30) {
-            line.push(new Point(Math.sin(theta) * 30 + 40, Math.cos(theta) * 30 + 40));
-        }
-        // line.push(new Point(10, 10));
-        // line.push(new Point(10, 11));
+        // for (var theta = 0; theta <= 2*Math.PI; theta += 2*Math.PI / 30) {
+        //     line.push(new Point(Math.sin(theta) * 30 + 40, Math.cos(theta) * 30 + 40));
+        // }
+        line.push(new Point(10, 10));
+        line.push(new Point(10, 11));
 
-        // line = new Line();
-        // line.push(new Point(10, 10));
-        // line.push(new Point(18, 10));
-        // this.input.push(line);
+        line = new Line();
+        line.push(new Point(10, 10));
+        line.push(new Point(18, 10));
+        this.input.push(line);
 
-        // line = new Line();
-        // line.push(new Point(10, 10));
-        // line.push(new Point(200, 200));
-        // this.input.push(line);
+        line = new Line();
+        line.push(new Point(10, 10));
+        line.push(new Point(70, 120));
+        this.input.push(line);
 
     }
 
@@ -65,9 +65,8 @@ class LineDisplay extends StageNode {
     sim(instr_str) {
 
         var IM = instr_str.replace(/0x|,|\s/g, "");
-
         var IM_bits = Quickstep.hexToBits(IM);
-
+        
         var printhead_down = false;
         var instr_buffer = "";
         var instr_buffer_index = 0;
@@ -105,12 +104,14 @@ class LineDisplay extends StageNode {
                         IP += 8;
                     }
                     var amt = instr_buffer.slice(instr_buffer_index * 2 - 2, instr_buffer_index * 2);
-                    instr_buffer_index -= 2;
+                    instr_buffer_index--;
                     switch (amt) {
                         case "00":
                             data_size = 4;
+                            break;
                         case "01":
                             data_size = 8;
+                            break;
                         case "10":
                             data_size = 16;
                             break;
@@ -120,7 +121,7 @@ class LineDisplay extends StageNode {
                     var dx, dy;
                     switch (data_size) {
                         case 4:
-                            [dx, dy] = Quickstep.BitHexToInt4("0x"+Quickstep.bitsToHex(IM_bits.slice(IP, IP+8)));
+                            [dx, dy] = Quickstep.bitHexToInt4("0x"+Quickstep.bitsToHex(IM_bits.slice(IP, IP+8)));
                             IP += 8;
                             break;
                         case 8:
@@ -129,8 +130,8 @@ class LineDisplay extends StageNode {
                             IP += 16;
                             break;
                         case 16:
-                            dx = Quickstep.BitHexToInt8("0x"+Quickstep.bitsToHex(IM_bits.slice(IP, IP+16)));
-                            dy = Quickstep.BitHexToInt8("0x"+Quickstep.bitsToHex(IM_bits.slice(IP+16, IP+32)));
+                            dx = Quickstep.BitHexToInt16("0x"+Quickstep.bitsToHex(IM_bits.slice(IP+8, IP+16)+IM_bits.slice(IP, IP+8)));
+                            dy = Quickstep.BitHexToInt16("0x"+Quickstep.bitsToHex(IM_bits.slice(IP+24, IP+32)+IM_bits.slice(IP+16, IP+24)));
                             IP += 32;
                             break;
                     }

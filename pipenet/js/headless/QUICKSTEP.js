@@ -204,7 +204,6 @@ class QUICKSTEP {
         return `0x${hex[1]},0x${hex[0]}`;
     }
     BitHexToInt16(bitHex) {
-        console.log(bitHex);
         const hex = bitHex.slice(2);
         const bin = parseInt(hex, 16).toString(2).padStart(8, '0');
         const unsigned = parseInt(bin, 2);

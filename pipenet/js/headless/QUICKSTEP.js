@@ -192,14 +192,19 @@ class QUICKSTEP {
         if (int16 < -32768 || int16 > 32767) {
           throw new RangeError("Input is out of range for int8.");
         }
+
+        const splitBits = (bits) => [bits.slice(0, 8), bits.slice(8)];
       
         const unsigned = int16 < 0 ? 65536 + int16 : int16;
         const bin = unsigned.toString(2).padStart(16, '0');
-        const hex = parseInt(bin, 2).toString(16).padStart(4, '0').toLowerCase();
+        var splitbin =  splitBits(bin);
+        const hex = [parseInt(splitbin[0], 2).toString(16).padStart(2, '0').toLowerCase(), parseInt(splitbin[1], 2).toString(16).padStart(2, '0').toLowerCase()];
       
-        return `0x${hex}`;
+        // NOTE: flipping order due to dword readout on arduino for consistency with little endianness
+        return `0x${hex[1]},0x${hex[0]}`;
     }
     BitHexToInt16(bitHex) {
+        console.log(bitHex);
         const hex = bitHex.slice(2);
         const bin = parseInt(hex, 16).toString(2).padStart(8, '0');
         const unsigned = parseInt(bin, 2);

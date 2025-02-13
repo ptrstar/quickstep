@@ -9,11 +9,24 @@ class LineDisplay extends StageNode {
         this.auto_run_sim = true;
 
         //DEBUG ONLY
-        // var line = new Line();
-        // this.input = [line];
-        // for (var theta = 0; theta <= 2*Math.PI; theta += 2*Math.PI / 100) {
-        //     line.push(new Point(Math.sin(theta) * 30 + 40, Math.cos(theta) * 30 + 40));
-        // }
+        var line = new Line();
+        this.input = [line];
+        for (var theta = 0; theta <= 2*Math.PI; theta += 2*Math.PI / 30) {
+            line.push(new Point(Math.sin(theta) * 30 + 40, Math.cos(theta) * 30 + 40));
+        }
+        // line.push(new Point(10, 10));
+        // line.push(new Point(10, 11));
+
+        // line = new Line();
+        // line.push(new Point(10, 10));
+        // line.push(new Point(18, 10));
+        // this.input.push(line);
+
+        // line = new Line();
+        // line.push(new Point(10, 10));
+        // line.push(new Point(200, 200));
+        // this.input.push(line);
+
     }
 
     compute() {

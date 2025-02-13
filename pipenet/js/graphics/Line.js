@@ -22,8 +22,9 @@ class Line {
         this.first = this.buffer[0];
     }
 
-    offset(point) {
+    _offset(point) {
         this.buffer.forEach(p => p._add(point));
+        return this;
     }
 
     isEmpty() {
@@ -34,5 +35,31 @@ class Line {
         var line = new Line(this.penWidth);
         this.buffer.forEach(point => line.push(point.transform(theta, center)));
         return line;
+    }
+
+    getIntSize() {
+        var count = 0;
+        var sigma = 0;
+        var prev = this.first.unpropscale(Unit.mm2xstep, Unit.mm2ystep);
+        this.buffer.forEach(point => {
+            if (point == prev) return;
+            
+            var stepped_target = point.unpropscale(Unit.mm2xstep, Unit.mm2ystep);
+            var stepped_delta = prev.sub(stepped_target);
+            sigma += Math.max(Math.abs(stepped_delta.x), Math.abs(stepped_delta.y));
+            count++;
+
+            prev = stepped_target;
+        })
+        var avg = sigma / count;
+        
+        // TODO: Find theoretical optimum for the following
+        if (avg <= 8) {
+            return 4;
+        }
+        if (avg <= 256) {
+            return 8;
+        }
+        return 16;
     }
 }

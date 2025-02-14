@@ -26,6 +26,9 @@ class NET {
             "AbstSpiral",
             "PostcardBack",
             "TransformLine",
+            "Hatching",
+            "CannyEdge",
+            "EdgeToLine"
         ];
         this.stages = [];
 

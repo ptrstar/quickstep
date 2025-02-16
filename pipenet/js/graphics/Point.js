@@ -4,6 +4,10 @@ class Point {
         this.y = y;
     }
 
+    distance(other) {
+        return Math.sqrt((this.x - other.x) ** 2 + (this.y - other.y) ** 2);
+    }    
+
     scale(factor) {
         return new Point(this.x * factor, this.y * factor);
     }
@@ -20,6 +24,9 @@ class Point {
     _add(other) {
         this.x += other.x;
         this.y += other.y;
+    }
+    area(a, b) {
+        return 0.5 * Math.abs((a.x - this.x)*(b.y - this.y) - (b.x - this.x)*(a.y - this.y));
     }
 
     round() {

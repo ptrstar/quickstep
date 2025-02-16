@@ -40,8 +40,8 @@ class Hatching extends StageNode {
         var lines = [];
         simple.forEach(l => {
             var line = new Line(0.7);
-            line.push(new Point(l.start[0], l.start[1]));
-            line.push(new Point(l.end[0], l.end[1]));
+            line.push(new Point(l.start[0], l.start[1]).scale(1/Unit.bufferScale));
+            line.push(new Point(l.end[0], l.end[1]).scale(1/Unit.bufferScale));
             lines.push(line);
         })
         return lines;
@@ -94,11 +94,13 @@ class Hatching extends StageNode {
     
         const hatchArray = input.map(row => row.map(value => Math.floor((1 - value) * this.maxDensity)));
         const gradients = this.sobelGradient(input); // Get gradient directions
+        console.log(gradients);
         const lines = [];
         for (let y = 0; y < input.length; y += this.lineSpacing) {
             for (let x = 0; x < input[0].length; x += this.lineSpacing) {
                 const density = hatchArray[y][x];
-                const gradientDir = gradients.direction[y][x];
+                // const gradientDir = gradients.direction[y][x];
+                const gradientDir = Math.PI /2;
                 for (let i = 0; i < density; i++) {
                     const noise = (Math.random() - 0.5) * this.noiseLevel * this.lineSpacing;
                     const angle = gradientDir + Math.PI / 2; // Perpendicular to gradient

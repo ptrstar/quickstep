@@ -6,6 +6,25 @@ class Line {
 
     }
 
+    size() {
+        return this.buffer.length;
+    }
+
+    clone() {
+        var line = new Line();
+        this.buffer.forEach(point => {
+            line.push(point.clone());
+        });
+        return line;
+    }
+
+    remove(i) {
+        this.buffer.splice(i, 1);
+        if (i == 0 && this.buffer.length > 0) {
+            this.first = this.buffer[0];
+        }
+    }
+
     push(point) {
         this.buffer.push(point);
         if (this.buffer.length == 1) {
@@ -20,6 +39,7 @@ class Line {
         }
         this.buffer = buffer;
         this.first = this.buffer[0];
+        return this;
     }
 
     _offset(point) {

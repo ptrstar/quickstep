@@ -46,7 +46,9 @@ class EdgeToLine extends StageNode {
             [-1, -1], [-1, 1], [1, -1], [1, 1]
         ];
     
-        const isEdge = (y, x) => y >= 0 && y < edges.length && x >= 0 && x < edges[0].length && edges[y][x] > 0 && !visited[y][x];
+        const isEdge = (y, x) => y >= 0 && y < edges.length && x >= 0 && x < edges[0].length && edges[y][x] >= 0.5 && !visited[y][x];
+        const isWeak = (y, x) => y >= 0 && y < edges.length && x >= 0 && x < edges[0].length && edges[y][x] == 0.5 && !visited[y][x];
+
     
         const traceLine = (y, x) => {
             const line = new Line(0.7);
@@ -68,7 +70,7 @@ class EdgeToLine extends StageNode {
     
         for (let y = 0; y < edges.length; y++) {
             for (let x = 0; x < edges[0].length; x++) {
-                if (isEdge(y, x)) lines.push(traceLine(y, x));
+                if (isEdge(y, x) && !isWeak(y, x)) lines.push(traceLine(y, x));
             }
         }
         return lines;

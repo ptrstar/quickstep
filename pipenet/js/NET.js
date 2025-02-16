@@ -28,7 +28,10 @@ class NET {
             "TransformLine",
             "Hatching",
             "CannyEdge",
-            "EdgeToLine"
+            "EdgeToLine",
+            "SmoothLine",
+            "CompressLine",
+            "BoxMaskLine"
         ];
         this.stages = [];
 

@@ -31,7 +31,7 @@ class LineDisplay extends StageNode {
 
     compute() {
 
-        this.output = this.input;
+        this.output = this.optimiseStrokeOrder();
 
         this.preview();
         if (this.auto_run_sim) {
@@ -60,6 +60,56 @@ class LineDisplay extends StageNode {
             });
             this.ctx.stroke();
         });
+    }
+
+    optimiseStrokeOrder() {
+        var lines = [];
+        var visited = [];
+
+        // discard single points as the plotter wont print them anyway
+        // use datastructure to store start and endpoints points by reference
+
+        for (var i = 0; i < this.input.length; i++) {
+            if (this.input[i].size() <= 1) {
+                this.input.splice(i, 1);
+            } else {
+                visited.push(false);
+            }
+        }
+
+        this.mdfs(lines, visited, new Point());
+        return lines;
+    } 
+    mdfs(lines, visited, current) {
+
+        var min = Infinity;
+        var idx = -1;
+        var isStart = false;
+
+        this.input.forEach((line, index) => {
+            if (!visited[index]) {
+                var start_dist = current.distance(line.first);
+                var end_dist = current.distance(line.buffer[line.buffer.length-1]);
+                if (start_dist < min) {
+                    min = start_dist;
+                    idx = index;
+                    isStart = true;
+                }
+                if (end_dist < min) {
+                    min = end_dist;
+                    idx = index;
+                    isStart = false;
+                }
+            }
+        });
+
+        if (idx >= 0) {
+            visited[idx] = true;
+            var final_line = isStart ? this.input[idx].clone() : this.input[idx].clone().reverse();
+            lines.push(final_line);
+            this.mdfs(lines, visited, final_line.buffer[final_line.buffer.length-1]);
+        }
+
     }
 
     sim(instr_str) {

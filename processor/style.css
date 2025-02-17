@@ -1,0 +1,138 @@
+body {
+    margin: 0;
+    padding: 0;
+    font-family: 'Roboto Mono', monospace;
+}
+
+#Top {
+    display: flex;
+    flex-direction: row;
+}
+#StageContainer {
+    z-index: 1;
+}
+#ConnectionCanvas {
+    position: absolute;
+    z-index: 0;
+}
+#Overview {
+    display: flex;
+    flex-direction: column;
+    justify-content: space-between;
+}
+
+.stageHeader {
+  display: flex;
+  flex-direction: row;
+  justify-content: space-between;
+}
+.stageNode {
+    z-index: 2;
+    display: flex;
+    flex-direction: column;
+    cursor: grab;
+    position: fixed;
+    /* item properties */
+    flex: 0 1 auto;
+    /* width: min-content; */
+    /* width: 5cm; */
+    border-radius: 0.3cm;
+    background: #383838; /* Green background */
+    color: white;
+    transition: background 0.3s ease;
+    box-shadow: 2px 2px 5px rgba(0, 0, 0, 0.4);
+    padding: 0.1cm;
+}
+.stageNode canvas {
+    display: block; /* Prevent extra inline spacing */
+    /* width: 100%; Ensure it uses all available space in the container */
+    /* height: auto; Maintain aspect ratio based on canvas resolution */
+  }
+.stageNode:hover {
+    background: #45a049;
+}
+.controlbox{
+    display: flex;
+    flex-direction: column;
+}
+
+
+
+
+
+
+/* Input */
+button {
+    padding: 6px 12px; /* Compact size */
+    background: #383838; /* Green background */
+    color: white; /* White text */
+    border: none; /* No border */
+    border-radius: 4px; /* Rounded corners */
+    cursor: pointer; /* Pointer on hover */
+    font-size: 14px; /* Readable font size */
+    transition: background 0.3s ease; /* Smooth hover effect */
+}
+
+button:hover {
+    background: #45a049; /* Slightly darker on hover */
+}
+input[type="range"] {
+    -webkit-appearance: none; /* Remove default appearance */
+    width: 3cm; /* Full width */
+    height: 6px; /* Compact height */
+    background: #000000; /* Dark background */
+    border-radius: 4px; /* Rounded corners */
+    outline: none; /* Remove outline */
+    opacity: 0.8; /* Slight transparency */
+    transition: opacity 0.3s ease; /* Smooth hover effect */
+    cursor: pointer; /* Pointer on hover */
+  }
+  
+  input[type="range"]::-webkit-slider-thumb {
+    -webkit-appearance: none; /* Remove default appearance */
+    appearance: none; /* Standardize */
+    width: 12px; /* Compact width */
+    height: 12px; /* Compact height */
+    background: white; /* White thumb */
+    border-radius: 50%; /* Circular thumb */
+    border: none; /* No border */
+    cursor: pointer; /* Pointer on hover */
+    transition: background 0.3s ease; /* Smooth hover effect */
+  }
+  
+  input[type="range"]:hover {
+    opacity: 1; /* Full opacity on hover */
+  }
+  
+  input[type="range"]::-webkit-slider-thumb:hover {
+    background: #45a049; /* Match button hover color */
+  }
+  
+  /* input[type="range"]::-moz-range-thumb {
+    width: 12px;
+    height: 12px;
+    background: white;
+    border-radius: 50%;
+    border: none;
+    cursor: pointer;
+    transition: background 0.3s ease;
+  }
+  
+  input[type="range"]::-moz-range-thumb:hover {
+    background: #45a049;
+  } */
+  
+  /* input[type="range"]::-ms-thumb {
+    width: 12px;
+    height: 12px;
+    background: white;
+    border-radius: 50%;
+    border: none;
+    cursor: pointer;
+    transition: background 0.3s ease;
+  }
+  
+  input[type="range"]::-ms-thumb:hover {
+    background: #45a049;
+  } */
+  

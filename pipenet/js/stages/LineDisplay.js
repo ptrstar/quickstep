@@ -69,7 +69,7 @@ class LineDisplay extends StageNode {
         // discard single points as the plotter wont print them anyway
         // use datastructure to store start and endpoints points by reference
 
-        for (var i = 0; i < this.input.length; i++) {
+        for (var i = this.input.length - 1; i >= 0; i--) {
             if (this.input[i].size() <= 1) {
                 this.input.splice(i, 1);
             } else {
@@ -88,6 +88,7 @@ class LineDisplay extends StageNode {
 
         this.input.forEach((line, index) => {
             if (!visited[index]) {
+                // if (!line.first) {console.log(this.input, index, line)}
                 var start_dist = current.distance(line.first);
                 var end_dist = current.distance(line.buffer[line.buffer.length-1]);
                 if (start_dist < min) {

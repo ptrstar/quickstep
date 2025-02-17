@@ -20,13 +20,13 @@ class PostcardBack extends StageNode {
         this.output.push(line);
 
         // address
-        var buffer = Fontparser.parse(this.address, "/quickstep/assets/RobotoMono-Regular.ttf", 8, 1);
+        var buffer = Fontparser.parse(this.address, "/quickstep/assets/RobotoMono-Regular.ttf", 4, 1);
         buffer.forEach(line => {
             this.output.push(line.transform(3 * Math.PI / 2, new Point())._offset(new Point(20, Unit.mmSize.y/2 - 10)));
         });
 
         // message
-        buffer = Fontparser.parse(this.message, "/quickstep/assets/Vegan.ttf", 8, 1);
+        buffer = Fontparser.parse(this.message, "/quickstep/assets/Vegan.ttf", 7, 1);
         buffer.forEach(line => {
             this.output.push(line.transform(3 * Math.PI / 2, new Point())._offset(new Point(20, Unit.mmSize.y - 10)));
         });

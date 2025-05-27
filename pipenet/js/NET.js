@@ -22,6 +22,7 @@ class NET {
             "SubtractGS",
             "Text",
             "Textarea",
+            "TextareaHershey",
             "AddLine",
             "AbstSpiral",
             "PostcardBack",

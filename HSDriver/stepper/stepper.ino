@@ -12,8 +12,9 @@
 #define Z_MICROSTEPS 8
 
 #define LIFT_AMT 20
-
 #define MAX_SPEED 50 // steps per second
+
+// PROGRAM
 
 const uint8_t IM[] PROGMEM = {
 0x8A,0x10,0x62,0x10,0x63,0x00,0x29,
@@ -103,13 +104,6 @@ const uint8_t IM[] PROGMEM = {
 0xEA,0xca,0xca,0xca,
 
 };
-// const uint8_t IM[] PROGMEM = {
-// // 0xe1, 0x2F // size4: Y X
-// // 0xe5, 0xfe, 0x7f // size8: X Y
-// 0xe9, 0xFF,0xFF, 0x02,0x00 // size16: X Y what the heck. check little endianness!!! -1, 2
-
-
-// };
 
 uint16_t IP = 0;
 uint8_t printhead_down = 0;
@@ -158,10 +152,8 @@ uint8_t fetch_instr() {
   return instr;
 }
 
+// MAIN: load and execute next instruction, synchronous
 void loop() {
-
-  // line is obsolete (and incorrect since dynamic intsize changes) as "0b11" ends the program
-  // if (IP >= instrCount) return;
 
   uint8_t instr = fetch_instr();
 
@@ -180,12 +172,15 @@ void loop() {
       break;
   }
 }
+
+// HELPER: Set the driving pins high and low for 2 microseconds, synchronous
 void drive(int pin) {
   digitalWrite(pin, HIGH);
   delayMicroseconds(2);
   digitalWrite(pin, LOW);
 }
 
+// INSTRUCTION: toggle printhead
 void i_toggle_printhead() {
   if (printhead_down) {
     digitalWrite(Z_DIR, LOW);
@@ -199,15 +194,17 @@ void i_toggle_printhead() {
   }
 }
 
+// INSTRUCTION: set datasize
 void i_set_datasize() {
   // set data_size to 0x04, 0x08 or 0x10 respectively
   data_size = 0x04 << fetch_instr();
 }
 
+// INSTRUCTION: move 
 void i_move() {
   
+  // Load coordinates according to datasize
   uint32_t yx;
-
   switch (data_size) {
     case 0x04:
       yx = pgm_read_byte(&IM[IP]);
@@ -257,6 +254,7 @@ void i_move() {
   uint64_t mtX = tarX * X_MICROSTEPS;
   uint64_t mtY = tarY * Y_MICROSTEPS;
 
+  // main synchronous move block
   while (posX != mtX || posY != mtY) {
     current_time = micros() - start_time;
     wait = 0;
@@ -278,6 +276,8 @@ void i_move() {
     if (wait) {delayMicroseconds(500);}
   }
 }
+
+// INSTRUCTION: terminate
 void i_exit() {
   // Serial.println("i_exit()");
   digitalWrite(ENABLE_PIN, HIGH);

@@ -95,13 +95,13 @@ class AmplifyLine extends StageNode {
         var flip = 0;
 
         for (var y = 0; y < this.input.length; y += yInc) {
-            if (this.input[parseInt(y)][0].gs == 1) continue;
+            //if (this.input[parseInt(y)][0].gs == 1) continue;
             var line = new Line(this.penWidth);
             for (var x = 0; x < this.input[0].length; x += xInc) {
-                if (this.input[parseInt(y)][parseInt(x)].gs == 1) {
-                    x = this.input[0].length;
-                    continue;
-                };
+                //if (this.input[parseInt(y)][parseInt(x)].gs == 1) {
+                //    x = this.input[0].length;
+                //    continue;
+                //};
                 var px = x / Unit.bufferScale;
                 var py = y / Unit.bufferScale + this.amplitude * (1-this.input[parseInt(y)][parseInt(x)].gs) * Math.sin(x * this.frequency + y*this.shift);
                 line.push(new Point(px, py));

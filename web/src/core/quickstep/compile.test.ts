@@ -125,7 +125,7 @@ describe("packMoves", () => {
     encode([
       { op: "size", bits: size },
       ...tokens.flatMap((t): Instruction[] =>
-        t.op === "pen" ? [t] : splitMove(t.dx, t.dy, chunkCount(t.dx, t.dy, size)).map((c) => ({ op: "move" as const, dx: c.x, dy: c.y })),
+        t.op !== "move" ? [t] : splitMove(t.dx, t.dy, chunkCount(t.dx, t.dy, size)).map((c) => ({ op: "move" as const, dx: c.x, dy: c.y })),
       ),
       { op: "end" },
     ]).length;

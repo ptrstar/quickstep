@@ -1,13 +1,23 @@
 "use client";
 
 import { useMemo, useState } from "react";
+import { type CalibrationConfig, calibrationSheet, DEFAULT_CALIBRATION } from "@/core/calibration";
 import { DEMOS } from "@/core/demo";
+import { buildJob, prepareInstructions } from "@/core/link/job";
 import { compile, decodeAll, fromCArray, type Instruction } from "@/core/quickstep";
+import { simulate } from "@/core/sim";
+import { CalibrationPanel } from "./CalibrationPanel";
+import { PlotterPanel } from "./plotter/PlotterPanel";
+import { useLiveTime } from "./plotter/useLiveTime";
+import { usePlotter } from "./plotter/usePlotter";
 import { ParamsPanel, useMachineParams } from "./sim/ParamsPanel";
 import { Simulator } from "./sim/Simulator";
 import styles from "./Workbench.module.css";
 
-type Program = { name: string; source: "file"; instructions: Instruction[] } | { name: string; source: "demo" };
+type Program =
+  | { name: string; source: "file"; instructions: Instruction[] }
+  | { name: string; source: "demo" }
+  | { name: "calibration"; source: "calibration" };
 
 /** v1 programs were C-array text ("0x81,0x13,..."); v2 programs are raw bytes. */
 async function readProgram(file: File): Promise<Uint8Array> {
@@ -18,15 +28,38 @@ async function readProgram(file: File): Promise<Uint8Array> {
 
 export function Workbench() {
   const machine = useMachineParams();
-  const [program, setProgram] = useState<Program>({ name: "star", source: "demo" });
+  const params = machine.params;
+  const [program, setProgramState] = useState<Program>({ name: "star", source: "demo" });
+  const [calibration, setCalibration] = useState<CalibrationConfig>(DEFAULT_CALIBRATION);
+  const [useProgramParams, setUseProgramParams] = useState(false);
   const [error, setError] = useState<string>();
+  const plotter = usePlotter();
+  const liveTime = useLiveTime(plotter);
+  const setProgram = (p: Program) => {
+    plotter.dismiss();
+    setProgramState(p);
+  };
 
-  // Demos are compiled with the current calibration, so steps/mm changes apply to them too.
-  const instructions = useMemo(
-    () =>
-      program.source === "file" ? program.instructions : compile(DEMOS[program.name](), machine.params, { header: false }),
-    [program, machine.params],
-  );
+  const sheet = useMemo(() => calibrationSheet(calibration, params), [calibration, params]);
+  const instructions = useMemo(() => {
+    if (program.source === "file") return program.instructions;
+    if (program.source === "calibration") return sheet.instructions;
+    // Demos are compiled with the current calibration, so steps/mm changes apply to them too.
+    return compile(DEMOS[program.name](), params, { header: false });
+  }, [program, params, sheet]);
+
+  // The calibration sheet sets its own parameters per cell, so it always keeps them.
+  const programParams = instructions.filter((i) => i.op === "set_param").length;
+  const keepProgramParams = program.source === "calibration" || (useProgramParams && programParams > 0);
+
+  // What is simulated is exactly what "Plot this" sends.
+  const current = useMemo(() => {
+    const job = buildJob(prepareInstructions(instructions, params, keepProgramParams));
+    return { job, sim: simulate(job.instructions, params) };
+  }, [instructions, params, keepProgramParams]);
+
+  // While a job runs, show that job (parameters may have been edited since).
+  const shown = liveTime !== undefined && plotter.active ? plotter.active : current;
 
   const open = async (file: File) => {
     try {
@@ -41,6 +74,7 @@ export function Workbench() {
     <main className={styles.workbench}>
       <aside className={styles.sidebar}>
         <h1>QuickStep</h1>
+        <PlotterPanel plotter={plotter} params={params} prepareJob={() => current} liveTime={liveTime} />
         <section className={styles.loader}>
           <strong>Program</strong>
           <input type="file" onChange={(e) => e.target.files?.[0] && open(e.target.files[0])} />
@@ -50,13 +84,25 @@ export function Workbench() {
                 {name}
               </button>
             ))}
+            <button type="button" onClick={() => setProgram({ name: "calibration", source: "calibration" })}>
+              calibration
+            </button>
           </div>
-          <span>showing: {program.name}</span>
+          <span>
+            showing: {program.name} · {current.job.bytes.length} bytes
+          </span>
+          {programParams > 0 && program.source === "file" && (
+            <label>
+              <input type="checkbox" checked={useProgramParams} onChange={(e) => setUseProgramParams(e.target.checked)} /> use the
+              program&apos;s {programParams} parameters instead of the panel
+            </label>
+          )}
           {error && <span className={styles.error}>{error}</span>}
         </section>
-        <ParamsPanel key={machine.revision} params={machine.params} onChange={machine.update} onReset={machine.reset} />
+        {program.source === "calibration" && <CalibrationPanel config={calibration} onChange={setCalibration} cells={sheet.cells} />}
+        <ParamsPanel key={machine.revision} params={params} onChange={machine.update} onReset={machine.reset} />
       </aside>
-      <Simulator instructions={instructions} params={machine.params} />
+      <Simulator sim={shown.sim} liveTime={liveTime} />
     </main>
   );
 }

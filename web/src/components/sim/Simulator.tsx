@@ -1,8 +1,7 @@
 "use client";
 
 import { useEffect, useMemo, useRef, useState } from "react";
-import type { Instruction, MachineParams } from "@/core/quickstep";
-import { simulate, stateAt, stats } from "@/core/sim";
+import { type Simulation, stateAt, stats } from "@/core/sim";
 import { drawPreview, drawProgress, drawSpeedGraph, fitView, speedColor, toCanvas } from "./render";
 import styles from "./Simulator.module.css";
 
@@ -33,19 +32,19 @@ function context(canvas: HTMLCanvasElement | null, width: number, height: number
 
 const ink = (el: Element) => getComputedStyle(el).color;
 
-export function Simulator({ instructions, params }: { instructions: Instruction[]; params: MachineParams }) {
-  // By default the panel's parameters win, so tuning them always shows an effect.
-  const [useProgramParams, setUseProgramParams] = useState(false);
+/**
+ * Plays back a simulation. With `liveTime` (a job is running on the plotter) the view can follow
+ * the plotter's estimated position instead of the playback clock.
+ */
+export function Simulator({ sim, liveTime }: { sim: Simulation; liveTime?: number }) {
   const [trueWidth, setTrueWidth] = useState(true);
-  const [time, setTime] = useState(0);
+  const [ownTime, setTime] = useState(0);
   const [playing, setPlaying] = useState(false);
   const [rate, setRate] = useState(10);
+  const [follow, setFollow] = useState(true);
+  const following = liveTime !== undefined && follow;
+  const time = following ? liveTime : ownTime;
 
-  const programParams = instructions.filter((i) => i.op === "set_param").length;
-  const sim = useMemo(() => {
-    const program = useProgramParams ? instructions : instructions.filter((i) => i.op !== "set_param" && i.op !== "reset_params");
-    return simulate(program, params);
-  }, [instructions, params, useProgramParams]);
   const summary = useMemo(() => stats(sim), [sim]);
   const view = useMemo(() => fitView(sim, SIZE, SIZE), [sim]);
   const maxDrawSpeed = useMemo(
@@ -160,9 +159,16 @@ export function Simulator({ instructions, params }: { instructions: Instruction[
 
   return (
     <div className={styles.simulator}>
+      {liveTime !== undefined && (
+        <label className={styles.follow}>
+          <input type="checkbox" checked={follow} onChange={(e) => setFollow(e.target.checked)} /> follow the plotter (estimated from
+          what it has received)
+        </label>
+      )}
       <div className={styles.controls}>
         <button
           type="button"
+          disabled={following}
           onClick={() => {
             if (t >= sim.duration) setTime(0);
             setPlaying(!playing);
@@ -170,7 +176,7 @@ export function Simulator({ instructions, params }: { instructions: Instruction[
         >
           {playing ? "Pause" : "Play"}
         </button>
-        <button type="button" onClick={() => setTime(0)}>
+        <button type="button" disabled={following} onClick={() => setTime(0)}>
           Restart
         </button>
         <label>
@@ -190,6 +196,7 @@ export function Simulator({ instructions, params }: { instructions: Instruction[
           max={sim.duration}
           step={sim.duration / 2000 || 1}
           value={t}
+          disabled={following}
           onChange={(e) => setTime(e.target.valueAsNumber)}
         />
         <span className={styles.mono}>
@@ -207,12 +214,6 @@ export function Simulator({ instructions, params }: { instructions: Instruction[
           <input type="checkbox" checked={trueWidth} onChange={(e) => setTrueWidth(e.target.checked)} /> pen width{" "}
           {PEN_WIDTH_MM} mm
         </label>
-        {programParams > 0 && (
-          <label>
-            <input type="checkbox" checked={useProgramParams} onChange={(e) => setUseProgramParams(e.target.checked)} />{" "}
-            use the program&apos;s {programParams} parameters
-          </label>
-        )}
       </div>
 
       <div className={styles.stage}>

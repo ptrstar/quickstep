@@ -18,7 +18,20 @@ const RANGE: Record<MoveSize, [number, number]> = { 4: [-8, 7], 8: [-128, 127], 
  * argument slot falls into the next opcode byte has its data after that byte.
  */
 export function encode(instructions: Iterable<Instruction>): Uint8Array {
+  return encodeWithBoundaries(instructions).bytes;
+}
+
+/**
+ * A group boundary: the stream up to `offset` holds complete opcode bytes with all their data, and
+ * exactly the instructions before `index`. Any complete group of bytes may be inserted there
+ * without changing the meaning of what follows, e.g. PAUSE + RESUME (SPEC §3).
+ */
+export type Boundary = { offset: number; index: number };
+
+export function encodeWithBoundaries(instructions: Iterable<Instruction>): { bytes: Uint8Array; boundaries: Boundary[] } {
   const out: number[] = [];
+  const boundaries: Boundary[] = [];
+  let index = 0;
   let register = 0;
   let slots = 0;
   let pending: number[] = [];
@@ -29,14 +42,15 @@ export function encode(instructions: Iterable<Instruction>): Uint8Array {
     slots = 0;
     pending = [];
   };
-  const slot = (bits: number, data: number[] = []) => {
+  const slot = (bits: number, data: number[] = [], first = false) => {
     if (slots === 4) flush();
+    if (first && slots === 0) boundaries.push({ offset: out.length, index });
     register |= bits << (2 * slots);
     slots++;
     pending.push(...data);
   };
   const ext = (opcode: number, payload: number[] = []) => {
-    slot(SLOT.PREFIX);
+    slot(SLOT.PREFIX, [], true);
     slot(EXT_ARG, [opcode, ...payload]);
   };
 
@@ -44,18 +58,18 @@ export function encode(instructions: Iterable<Instruction>): Uint8Array {
   for (const ins of instructions) {
     switch (ins.op) {
       case "pen":
-        slot(SLOT.PEN);
+        slot(SLOT.PEN, [], true);
         break;
       case "size":
-        slot(SLOT.PREFIX);
+        slot(SLOT.PREFIX, [], true);
         slot(SIZE_ARG[ins.bits]);
         size = ins.bits;
         break;
       case "move":
-        slot(SLOT.MOVE, moveData(ins.dx, ins.dy, size));
+        slot(SLOT.MOVE, moveData(ins.dx, ins.dy, size), true);
         break;
       case "end":
-        slot(SLOT.END);
+        slot(SLOT.END, [], true);
         flush();
         size = DEFAULT_SIZE;
         break;
@@ -75,9 +89,13 @@ export function encode(instructions: Iterable<Instruction>): Uint8Array {
       default:
         ext(EXT_OPCODE[ins.op]);
     }
+    index++;
   }
+  // The end is only a boundary if the last opcode byte needed no padding (padding slots would run as PEN).
+  const padded = slots > 0 && slots < 4;
   if (slots > 0) flush();
-  return Uint8Array.from(out);
+  if (!padded) boundaries.push({ offset: out.length, index });
+  return { bytes: Uint8Array.from(out), boundaries };
 }
 
 function moveData(dx: number, dy: number, size: MoveSize): number[] {

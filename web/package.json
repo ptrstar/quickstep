@@ -20,6 +20,7 @@
     "@types/node": "^24.19.2",
     "@types/react": "^19",
     "@types/react-dom": "^19",
+    "@types/w3c-web-serial": "^1.0.8",
     "eslint": "^9",
     "eslint-config-next": "16.4.0",
     "fast-check": "^4.10.2",

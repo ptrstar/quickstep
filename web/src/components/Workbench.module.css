@@ -31,3 +31,33 @@
     grid-template-columns: 1fr;
   }
 }
+
+.calibration {
+  display: grid;
+  gap: 6px;
+  font-size: 13px;
+}
+
+.calibration label {
+  display: grid;
+  grid-template-columns: 100px 1fr;
+  align-items: center;
+  gap: 6px;
+}
+
+.calibration input {
+  min-width: 0;
+}
+
+.calibration table {
+  border-collapse: collapse;
+  font-family: var(--font-geist-mono), monospace;
+  font-size: 12px;
+}
+
+.calibration th,
+.calibration td {
+  border: 1px solid color-mix(in srgb, currentColor 20%, transparent);
+  padding: 2px 4px;
+  text-align: center;
+}

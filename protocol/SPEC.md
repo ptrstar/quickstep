@@ -78,6 +78,10 @@ are just tiny jobs, e.g. `MOVE(40, 0), END`.
 Encoders pad unused slots with `00`. That is only safe after END, so every transmission must end
 with END.
 
+Senders may also put END right after a pen lift (followed by SIZE if the move size was not 8). That
+creates a group boundary where the job can be paused with the pen up. It costs nothing in time, since
+PEN is already a barrier.
+
 ## 5. Serial link
 
 - 250000 baud, 8N1 (exact on a 16 MHz ATmega328P with U2X).

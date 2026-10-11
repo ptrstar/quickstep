@@ -17,7 +17,7 @@ describe("GraphSession", () => {
     const [img, , , blur] = doc.nodes.map((n) => n.id);
     const empty = s.run(doc);
     expect(empty.thumbs).toEqual([]);
-    expect(empty.cleared).toHaveLength(7);
+    expect(empty.cleared).toHaveLength(7); // not the output knob: it never has a thumbnail
     expect(empty.drawing).toBeUndefined();
 
     s.addAsset("a", image());
@@ -27,7 +27,7 @@ describe("GraphSession", () => {
     expect(first.drawing?.paper).toEqual({ width: 105, height: 148 });
 
     const second = s.run(setParam(registry, doc, blur, "radius", 5));
-    expect(second.thumbs.map(([id]) => id)).toEqual(doc.nodes.slice(3).map((n) => n.id));
+    expect(second.thumbs.map(([id]) => id)).toEqual(doc.nodes.slice(3, 7).map((n) => n.id));
     expect(second.cleared).toEqual([]);
   });
 });

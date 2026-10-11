@@ -1,7 +1,7 @@
 "use client";
 
 import { useEffect, useReducer } from "react";
-import { defaultPipeline, type GraphDoc, type GraphPath, type NodeId, registry, updateAt, validPath } from "@/core/graph";
+import { defaultPipeline, ensureOutput, type GraphDoc, type GraphPath, type NodeId, registry, updateAt, validPath } from "@/core/graph";
 
 const STORAGE_KEY = "quickstep.project";
 const HISTORY = 100;
@@ -32,13 +32,13 @@ type Action =
   | { type: "load"; doc: GraphDoc; name: string };
 
 function fresh(doc: GraphDoc, name: string): ProjectState {
-  return { name, doc, past: [], future: [], path: [], selection: [], drawer: false };
+  return { name, doc: ensureOutput(registry, doc), past: [], future: [], path: [], selection: [], drawer: false };
 }
 
 function reducer(s: ProjectState, a: Action): ProjectState {
   switch (a.type) {
     case "edit": {
-      const doc = updateAt(s.doc, a.at ?? s.path, a.change);
+      const doc = ensureOutput(registry, updateAt(s.doc, a.at ?? s.path, a.change));
       if (doc === s.doc) return s;
       const now = Date.now();
       const merge = a.coalesce && s.coalesce?.key === a.coalesce && now - s.coalesce.at < COALESCE_MS;

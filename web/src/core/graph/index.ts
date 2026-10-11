@@ -8,3 +8,5 @@ export * from "./path";
 export * from "./thumbs";
 export * from "./defaults";
 export * from "./session";
+export * from "./output";
+export { OUTPUT_TYPE } from "./nodes";

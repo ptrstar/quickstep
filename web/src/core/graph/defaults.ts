@@ -1,4 +1,5 @@
 import { connect, createNode, type GraphDoc, type Registry } from "./doc";
+import { ensureOutput } from "./output";
 
 /** Horizontal distance between nodes in the default layouts. */
 export const NODE_PITCH = 260;
@@ -22,5 +23,5 @@ export function chain(registry: Registry, types: string[], params: Record<string
 
 /** The starting pipeline: AmplifyLine portrait waves on A6, optimized for plotting. */
 export function defaultPipeline(registry: Registry): GraphDoc {
-  return chain(registry, ["image", "grayscale", "contrast", "blur", "amplifyLine", "paper", "optimize"]);
+  return ensureOutput(registry, chain(registry, ["image", "grayscale", "contrast", "blur", "amplifyLine", "paper", "optimize"]));
 }

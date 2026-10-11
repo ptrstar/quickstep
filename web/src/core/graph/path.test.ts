@@ -43,8 +43,8 @@ describe("graph paths", () => {
     const doc = defaultPipeline(registry);
     const ids = doc.nodes.slice(1, 3).map((n) => n.id);
     const d = duplicate(doc, ids);
-    expect(d.doc.nodes).toHaveLength(9);
-    expect(d.doc.edges).toHaveLength(7);
+    expect(d.doc.nodes).toHaveLength(10);
+    expect(d.doc.edges).toHaveLength(8);
     expect(d.ids.every((id) => !ids.includes(id))).toBe(true);
   });
 });

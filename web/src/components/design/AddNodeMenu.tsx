@@ -26,7 +26,7 @@ export function AddNodeMenu({
 }) {
   const [query, setQuery] = useState("");
   const q = query.trim().toLowerCase();
-  const nodes = defs.filter((d) => (!accepts || d.inputs.some((p) => p.type === accepts)) && (!q || d.label.toLowerCase().includes(q)));
+  const nodes = defs.filter((d) => !d.hidden && (!accepts || d.inputs.some((p) => p.type === accepts)) && (!q || d.label.toLowerCase().includes(q)));
   const usable = blocks.filter((b) => (!accepts || b.group.inputs.some((p) => p.type === accepts)) && (!q || b.name.toLowerCase().includes(q)));
   const first: MenuPick | undefined = nodes[0] ? { kind: "node", type: nodes[0].type } : usable[0] && { kind: "block", block: usable[0] };
 

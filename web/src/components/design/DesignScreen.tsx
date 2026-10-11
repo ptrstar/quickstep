@@ -10,6 +10,7 @@ import {
   graphAt,
   type GroupNode,
   groupNodes,
+  isOutput,
   newId,
   NODE_DEFS,
   type PortRef,
@@ -53,13 +54,14 @@ export function DesignScreen({
   const graph = graphAt(project.doc, path);
   const parentGraph = graphAt(project.doc, path.slice(0, -1));
   const parent = path.length ? (parentGraph.nodes.find((n) => n.id === path.at(-1)) as GroupNode | undefined) : undefined;
-  const selected = graph.nodes.filter((n) => project.selection.includes(n.id));
+  const selected = graph.nodes.filter((n) => project.selection.includes(n.id) && !isOutput(n));
+  const ids = selected.map((n) => n.id);
   const prefix = path.length ? path.join("/") + "/" : "";
   const [menu, setMenu] = useState<{ world: Point; screen: Point; from?: WireSource }>();
 
   const group = () => {
-    if (project.selection.length === 0) return;
-    const g = groupNodes(registry, graph, project.selection, "Block");
+    if (ids.length === 0) return;
+    const g = groupNodes(registry, graph, ids, "Block");
     project.edit(() => g.doc, { select: [g.id] });
   };
   const ungroupSelected = (id = project.selection[0]) => {
@@ -67,9 +69,9 @@ export function DesignScreen({
     if (node?.kind !== "group") return;
     project.edit((g) => ungroup(g, id), { select: node.graph.nodes.map((n) => n.id) });
   };
-  const remove = () => project.edit((g) => removeNodes(g, project.selection), { select: [] });
+  const remove = () => project.edit((g) => removeNodes(g, ids), { select: [] });
   const dup = () => {
-    const d = duplicate(graph, project.selection);
+    const d = duplicate(graph, ids);
     project.edit(() => d.doc, { select: d.ids });
   };
 
@@ -87,7 +89,7 @@ export function DesignScreen({
         e.preventDefault();
         dup();
       } else if (e.key === "Delete" || e.key === "Backspace") {
-        if (project.selection.length) remove();
+        if (ids.length) remove();
       } else if (e.key.toLowerCase() === "g" && !mod) {
         if (e.shiftKey) ungroupSelected();
         else group();

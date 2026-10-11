@@ -215,6 +215,19 @@ const optimize: NodeDef = {
   },
 };
 
-export const NODE_DEFS: NodeDef[] = [image, toGray, invertNode, contrastNode, blurNode, amplifyLine, paper, textNode, postcardNode, mergeNode, optimize];
+/** The pipeline's single output: whatever drawing is wired into it gets plotted. */
+export const OUTPUT_TYPE = "output";
+const outputNode: NodeDef = {
+  type: OUTPUT_TYPE,
+  label: "Output",
+  description: "Whatever drawing is wired into this knob is what gets plotted.",
+  inputs: [{ name: "drawing", type: "drawing" }],
+  outputs: [],
+  params: {},
+  hidden: true,
+  compute: () => ({}),
+};
+
+export const NODE_DEFS: NodeDef[] = [outputNode, image, toGray, invertNode, contrastNode, blurNode, amplifyLine, paper, textNode, postcardNode, mergeNode, optimize];
 
 export const registry: Registry = new Map(NODE_DEFS.map((d) => [d.type, d]));

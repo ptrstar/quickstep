@@ -31,7 +31,7 @@ describe("Optimize on the default pipeline", () => {
     s.addAsset("p", portrait());
     let doc = defaultPipeline(registry);
     doc = setParam(registry, doc, doc.nodes[0].id, "asset", "p");
-    const opt = doc.nodes.at(-1)!.id;
+    const opt = doc.nodes.find((n) => n.kind === "node" && n.type === "optimize")!.id;
 
     const run = (d: typeof doc) => {
       const drawing = s.run(d).drawing!;

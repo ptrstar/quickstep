@@ -71,7 +71,9 @@ export function PaperView({ drawing, selected, selectedLabel }: { drawing?: Pape
       </div>
       <div ref={box} className={styles.stage}>
         <canvas ref={canvas} style={{ width: size.width, height: size.height }} aria-label={showSelected ? `Output of ${selectedLabel}` : "Drawing on paper"} />
-        {!drawing && !showSelected && <p className={styles.empty}>Load an image in the Image node to see the drawing</p>}
+        {!drawing && !showSelected && (
+          <p className={styles.empty}>Wire a drawing into the Output knob at the right of the pipeline (and load an image if your pipeline starts with one)</p>
+        )}
       </div>
       <div className={styles.stats}>
         {showSelected ? (

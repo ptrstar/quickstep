@@ -1,5 +1,6 @@
 import type { GraphDoc } from "./doc";
 import { Evaluator, type NodeStatus } from "./evaluate";
+import { OUTPUT_TYPE } from "./nodes";
 import { makeThumb, type Thumb } from "./thumbs";
 import type { Assets, PaperDrawing, RgbaImage } from "./types";
 import type { Registry } from "./doc";
@@ -13,7 +14,7 @@ export type SessionResult = {
   thumbs: [string, Thumb][];
   /** Flat ids that have no output any more, so the UI drops their thumbnails. */
   cleared: string[];
-  /** What will be plotted: the end of the chain, a drawing that no other node takes. */
+  /** What will be plotted: the drawing wired into the output knob. */
   drawing?: PaperDrawing;
   ms: number;
 };
@@ -24,7 +25,7 @@ export class GraphSession {
   private assets = new Map<string, RgbaImage>();
   private fonts = new Map<string, Font>();
 
-  constructor(registry: Registry) {
+  constructor(private readonly registry: Registry) {
     this.evaluator = new Evaluator(registry);
   }
 
@@ -46,19 +47,20 @@ export class GraphSession {
     const thumbs: [string, Thumb][] = [];
     const cleared: string[] = [];
     for (const node of result.flat.nodes) {
+      if (!this.registry.get(node.type)?.outputs.length) continue; // e.g. the output knob: nothing to show
       const out = result.outputs.get(node.id);
       const first = out && Object.values(out)[0];
       if (!first) cleared.push(node.id);
       else if (result.status.get(node.id)?.fresh) thumbs.push([node.id, makeThumb(first)]);
     }
-    const drawings = result.flat.nodes.filter((n) => result.outputs.get(n.id)?.drawing);
-    const isSink = (id: string) => !result.flat.edges.some((e) => e.from.node === id);
-    const paper = drawings.find((n) => isSink(n.id)) ?? drawings[0];
+    const output = result.flat.nodes.find((n) => n.type === OUTPUT_TYPE && n.path.length === 0);
+    const feed = output && result.flat.edges.find((e) => e.to.node === output.id);
+    const drawing = feed && (result.outputs.get(feed.from.node)?.[feed.from.port] as PaperDrawing | undefined);
     return {
       status: [...result.status.entries()],
       thumbs,
       cleared,
-      drawing: paper && (result.outputs.get(paper.id)!.drawing as PaperDrawing),
+      drawing,
       ms: Date.now() - t0,
     };
   }

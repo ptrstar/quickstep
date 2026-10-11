@@ -9,6 +9,7 @@ import {
   type DataType,
   disconnect,
   type GraphDoc,
+  isOutput,
   type GraphPath,
   type NodeId,
   type NodeStatus,
@@ -53,7 +54,22 @@ export function GraphCanvas({ registry, graph, path, status, thumbs, selection, 
   const box = useRef<HTMLDivElement>(null);
   const [view, setView] = useState<View>({ x: 40, y: 40, k: 1 });
   const [drag, setDrag] = useState<Drag | null>(null);
+  const [size, setSize] = useState({ width: 0, height: 0 });
   const prefix = path.length ? path.join("/") + "/" : "";
+
+  // The output knob is docked at the right edge of the top-level canvas, outside the pannable world.
+  const output = path.length === 0 ? graph.nodes.find(isOutput) : undefined;
+  const nodes = graph.nodes.filter((n) => n !== output);
+  const knobScreen = { x: size.width - 26, y: size.height / 2 };
+  const knobWorld = { x: (knobScreen.x - view.x) / view.k, y: (knobScreen.y - view.y) / view.k };
+  const outputWired = !!output && graph.edges.some((e) => e.to.node === output.id);
+
+  useEffect(() => {
+    const el = box.current!;
+    const ro = new ResizeObserver(([entry]) => setSize({ width: entry.contentRect.width, height: entry.contentRect.height }));
+    ro.observe(el);
+    return () => ro.disconnect();
+  }, []);
 
   const toWorld = useCallback(
     (cx: number, cy: number): Point => {
@@ -64,7 +80,7 @@ export function GraphCanvas({ registry, graph, path, status, thumbs, selection, 
   );
 
   const fit = useCallback(() => {
-    const b = bounds(graph);
+    const b = bounds({ ...graph, nodes: graph.nodes.filter((n) => !isOutput(n)) });
     const el = box.current;
     if (!b || !el) return;
     const { width, height } = el.getBoundingClientRect();
@@ -204,7 +220,7 @@ export function GraphCanvas({ registry, graph, path, status, thumbs, selection, 
         if (!drag.additive) onSelect([], false);
         return;
       }
-      const hit = graph.nodes
+      const hit = nodes
         .filter((n) => n.position.x < x1 && n.position.x + CARD.width > x0 && n.position.y < y1 && n.position.y + CARD_HEIGHT > y0)
         .map((n) => n.id);
       onSelect(drag.additive ? [...new Set([...selection, ...hit])] : hit, false);
@@ -260,7 +276,7 @@ export function GraphCanvas({ registry, graph, path, status, thumbs, selection, 
             if (!a || !b) return null;
             const type = portsOf(registry, a).outputs.find((p) => p.name === e.from.port)?.type ?? "gray";
             const p = portPosition(registry, a, "outputs", e.from.port, position(a.id, a.position));
-            const q = portPosition(registry, b, "inputs", e.to.port, position(b.id, b.position));
+            const q = b === output ? knobWorld : portPosition(registry, b, "inputs", e.to.port, position(b.id, b.position));
             return <path key={`${e.to.node}.${e.to.port}`} d={wirePath(p, q)} stroke={TYPE_COLOR[type]} />;
           })}
           {drag?.kind === "wire" &&
@@ -270,7 +286,7 @@ export function GraphCanvas({ registry, graph, path, status, thumbs, selection, 
               return <path d={wirePath(portPosition(registry, a, "outputs", drag.from.port), drag.at)} stroke={TYPE_COLOR[drag.type]} strokeDasharray="6 5" />;
             })()}
         </svg>
-        {graph.nodes.map((n) => (
+        {nodes.map((n) => (
           <NodeCard
             key={n.id}
             registry={registry}
@@ -296,7 +312,20 @@ export function GraphCanvas({ registry, graph, path, status, thumbs, selection, 
           />
         )}
       </div>
-      {graph.nodes.length === 0 && <p className={styles.empty}>Double-click to add a node</p>}
+      {nodes.length === 0 && <p className={styles.empty}>Double-click to add a node</p>}
+      {output && (
+        <div className={`${styles.knob} ${outputWired ? "" : styles.knobOpen}`} style={{ top: knobScreen.y }} title="Whatever drawing is wired here gets plotted">
+          <span
+            className={styles.knobPort}
+            data-port="drawing"
+            data-side="inputs"
+            data-node={output.id}
+            data-type="drawing"
+            onPointerDown={(e) => onPortDown(output.id)(e, "inputs", "drawing")}
+          />
+          <span className={styles.knobLabel}>{outputWired ? "Output" : "Output · wire a drawing here"}</span>
+        </div>
+      )}
       <div className={styles.zoom}>
         <span>{Math.round(view.k * 100)}%</span>
         <button type="button" onClick={fit}>

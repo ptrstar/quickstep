@@ -26,8 +26,9 @@ export function layerThresholds(layers: number, cutoff: number): number[] {
  * Tonal cross-hatching. Layer k covers the image with parallel lines at angle + k·angleStep and
  * draws them only where the tone is darker than its threshold, so light areas get one direction and
  * the darkest get all of them. Lines alternate direction to keep the pen-up travel short.
+ * `allowed` can keep areas free of hatching (e.g. a gap around outlines).
  */
-export function hatch(g: GrayImage, o: HatchOptions): Stroke[] {
+export function hatch(g: GrayImage, o: HatchOptions, allowed: (x: number, y: number) => boolean = () => true): Stroke[] {
   const strokes: Stroke[] = [];
   const thresholds = layerThresholds(o.layers, o.cutoff);
   const corners = [
@@ -55,7 +56,7 @@ export function hatch(g: GrayImage, o: HatchOptions): Stroke[] {
       for (let t = t0; t <= t1 + 1e-9; t += step) {
         const p = { x: n.x * s + d.x * t, y: n.y * s + d.y * t };
         const inside = p.x >= 0 && p.y >= 0 && p.x <= g.width && p.y <= g.height;
-        const dark = inside && sample(g, p.x, p.y) < threshold;
+        const dark = inside && sample(g, p.x, p.y) < threshold && allowed(p.x, p.y);
         if (dark) {
           if (current) current[1] = p;
           else current = [p, p];

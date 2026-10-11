@@ -4,6 +4,7 @@ import type { GrayImage, Lines, NodeDef, PaperDrawing, RgbaImage } from "../type
 import { NeedsInput } from "../types";
 import { canny, traceEdges } from "./edges";
 import { hatch } from "./hatching";
+import { distanceTransform, rasterize } from "./ink";
 import { optimizeStrokes, smooth, strokeLength, travelLength } from "./optimize";
 import { PAPER_SIZES, paperSize } from "./paper";
 import { mergeNode, postcardNode, textNode } from "./text";
@@ -247,31 +248,69 @@ const edges: NodeDef = {
   summary: linesSummary,
 };
 
+const HATCH_PARAMS: NodeDef["params"] = {
+  lines: { kind: "number", label: "Density", default: 90, min: 10, max: 400, step: 1, unit: "lines / height" },
+  layers: { kind: "number", label: "Layers", default: 3, min: 1, max: 6, step: 1 },
+  angle: { kind: "number", label: "Angle", default: 45, min: 0, max: 180, step: 1, unit: "°" },
+  angleStep: { kind: "number", label: "Turn per layer", default: 45, min: 0, max: 180, step: 1, unit: "°" },
+  cutoff: { kind: "number", label: "Lightest hatched tone", default: 0.85, min: 0.05, max: 1, step: 0.01 },
+  minLength: { kind: "number", label: "Shortest segment", default: 3, min: 0, max: 50, step: 0.5, unit: "px" },
+};
+
+const hatchOptions = (g: GrayImage, p: Record<string, unknown>) => ({
+  spacing: g.height / (p.lines as number),
+  layers: p.layers as number,
+  angle: p.angle as number,
+  angleStep: p.angleStep as number,
+  cutoff: p.cutoff as number,
+  minLength: p.minLength as number,
+});
+
 const hatching: NodeDef = {
   type: "hatching",
   label: "Hatching",
   description: "Tonal cross-hatching: each darker tone adds a layer of parallel lines in another direction.",
   inputs: [{ name: "gray", type: "gray" }],
   outputs: [{ name: "lines", type: "lines" }],
-  params: {
-    lines: { kind: "number", label: "Density", default: 90, min: 10, max: 400, step: 1, unit: "lines / height" },
-    layers: { kind: "number", label: "Layers", default: 3, min: 1, max: 6, step: 1 },
-    angle: { kind: "number", label: "Angle", default: 45, min: 0, max: 180, step: 1, unit: "°" },
-    angleStep: { kind: "number", label: "Turn per layer", default: 45, min: 0, max: 180, step: 1, unit: "°" },
-    cutoff: { kind: "number", label: "Lightest hatched tone", default: 0.85, min: 0.05, max: 1, step: 0.01 },
-    minLength: { kind: "number", label: "Shortest segment", default: 3, min: 0, max: 50, step: 0.5, unit: "px" },
-  },
+  params: HATCH_PARAMS,
   compute(inp, p) {
     const g = inp.gray as GrayImage;
-    const strokes = hatch(g, {
-      spacing: g.height / (p.lines as number),
-      layers: p.layers as number,
-      angle: p.angle as number,
-      angleStep: p.angleStep as number,
-      cutoff: p.cutoff as number,
-      minLength: p.minLength as number,
-    });
-    return { lines: { width: g.width, height: g.height, strokes } satisfies Lines };
+    return { lines: { width: g.width, height: g.height, strokes: hatch(g, hatchOptions(g, p)) } satisfies Lines };
+  },
+  summary: linesSummary,
+};
+
+/**
+ * Pen-and-ink illustration (Winkenbach & Salesin 1994): outlines carry the shapes, hatching the
+ * tone, and the hatching stops a small gap before every outline, so outlines stay crisp.
+ */
+const ink: NodeDef = {
+  type: "ink",
+  label: "Ink drawing",
+  description:
+    "Pen-and-ink illustration: hatching for the tone that stops a small gap before the outlines, plus the outlines. Feed outlines from Edges (or any lines on the same image).",
+  inputs: [
+    { name: "tone", type: "gray" },
+    { name: "outlines", type: "lines" },
+  ],
+  outputs: [{ name: "lines", type: "lines" }],
+  params: {
+    gap: { kind: "number", label: "Gap at outlines", default: 2, min: 0, max: 15, step: 0.5, unit: "px" },
+    drawOutlines: { kind: "boolean", label: "Draw the outlines", default: true },
+    ...HATCH_PARAMS,
+  },
+  compute(inp, p) {
+    const g = inp.tone as GrayImage;
+    const outlines = inp.outlines as Lines;
+    // outlines from another frame size are scaled onto the tone image
+    const sx = g.width / outlines.width;
+    const sy = g.height / outlines.height;
+    const scaled = outlines.strokes.map((s) => s.map((q) => ({ x: q.x * sx, y: q.y * sy })));
+    const gap = p.gap as number;
+    const dist = gap > 0 ? distanceTransform(rasterize(scaled, g.width, g.height), g.width, g.height) : undefined;
+    const pixel = (x: number, y: number) => Math.min(g.height - 1, Math.floor(y)) * g.width + Math.min(g.width - 1, Math.floor(x));
+    const hatched = hatch(g, hatchOptions(g, p), dist && ((x, y) => dist[pixel(x, y)] > gap));
+    return { lines: { width: g.width, height: g.height, strokes: p.drawOutlines ? [...scaled, ...hatched] : hatched } satisfies Lines };
   },
   summary: linesSummary,
 };
@@ -289,6 +328,6 @@ const outputNode: NodeDef = {
   compute: () => ({}),
 };
 
-export const NODE_DEFS: NodeDef[] = [outputNode, image, toGray, invertNode, contrastNode, blurNode, amplifyLine, edges, hatching, paper, textNode, postcardNode, mergeNode, optimize];
+export const NODE_DEFS: NodeDef[] = [outputNode, image, toGray, invertNode, contrastNode, blurNode, amplifyLine, edges, hatching, ink, paper, textNode, postcardNode, mergeNode, optimize];
 
 export const registry: Registry = new Map(NODE_DEFS.map((d) => [d.type, d]));

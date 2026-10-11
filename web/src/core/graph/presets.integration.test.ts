@@ -2,7 +2,7 @@ import { describe, expect, it } from "vitest";
 import { compile } from "../quickstep/compile";
 import { DEFAULT_PARAMS } from "../quickstep/params";
 import { simulate, stats } from "../sim/simulate";
-import { crosshatch, defaultPipeline, edgeSketch } from "./defaults";
+import { crosshatch, defaultPipeline, edgeSketch, inkDrawing } from "./defaults";
 import { type GraphDoc, setParam, updateNode } from "./doc";
 import { registry } from "./nodes";
 import { travelLength } from "./nodes/optimize";
@@ -34,6 +34,7 @@ function withImage(doc: GraphDoc) {
 describe.each([
   ["Edge sketch", edgeSketch],
   ["Crosshatch", crosshatch],
+  ["Ink drawing", inkDrawing],
   ["Portrait waves", defaultPipeline],
 ])("%s preset", (name, make) => {
   it("plots the portrait inside the sheet, and Optimize shortens the travel", () => {

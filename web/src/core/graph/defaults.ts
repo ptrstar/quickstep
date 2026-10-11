@@ -31,6 +31,26 @@ export function crosshatch(registry: Registry): GraphDoc {
   return ensureOutput(registry, chain(registry, ["image", "grayscale", "contrast", "blur", "hatching", "paper", "optimize"], { blur: { radius: 1 } }));
 }
 
+/**
+ * Pen-and-ink: one grayscale feeds both the outlines (Edges) and the tone (Contrast → Blur), which
+ * Ink drawing combines into hatching that stops short of the outlines.
+ */
+export function inkDrawing(registry: Registry): GraphDoc {
+  let doc = chain(registry, ["image", "grayscale", "contrast", "blur", "ink", "paper", "optimize"], { blur: { radius: 1 } });
+  const [, gray, , , inkNode] = doc.nodes;
+  const edges = createNode(registry, "edges", { x: NODE_PITCH * 2, y: 480 });
+  doc = { ...doc, nodes: [...doc.nodes, edges] };
+  for (const [from, to] of [
+    [{ node: gray.id, port: "gray" }, { node: edges.id, port: "gray" }],
+    [{ node: edges.id, port: "lines" }, { node: inkNode.id, port: "outlines" }],
+  ]) {
+    const r = connect(registry, doc, from, to);
+    if (!r.ok) throw new Error(r.reason);
+    doc = r.doc;
+  }
+  return ensureOutput(registry, doc);
+}
+
 /** The starting pipeline: AmplifyLine portrait waves on A6, optimized for plotting. */
 export function defaultPipeline(registry: Registry): GraphDoc {
   return ensureOutput(registry, chain(registry, ["image", "grayscale", "contrast", "blur", "amplifyLine", "paper", "optimize"]));

@@ -1,0 +1,35 @@
+.params {
+  display: grid;
+  gap: 12px;
+  align-content: start;
+}
+
+.params fieldset {
+  display: grid;
+  gap: 6px;
+  border: 1px solid color-mix(in srgb, currentColor 20%, transparent);
+  padding: 8px 10px;
+}
+
+.params label {
+  display: grid;
+  grid-template-columns: 80px 1fr 56px;
+  align-items: center;
+  gap: 6px;
+  font-size: 13px;
+}
+
+.params input {
+  width: 100%;
+  min-width: 0;
+}
+
+.params small {
+  opacity: 0.6;
+}
+
+.follow {
+  font-size: 13px;
+  color: crimson;
+}
+

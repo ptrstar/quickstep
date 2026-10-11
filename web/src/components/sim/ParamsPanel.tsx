@@ -2,7 +2,7 @@
 
 import { useEffect, useState } from "react";
 import { DEFAULT_PARAMS, type MachineParams, type ParamName } from "@/core/quickstep";
-import styles from "./Simulator.module.css";
+import styles from "./ParamsPanel.module.css";
 
 const STORAGE_KEY = "quickstep.machineParams";
 

@@ -8,7 +8,8 @@ import type { MachineParams } from "@/core/quickstep";
 import type { Simulation } from "@/core/sim";
 import { openSimulated, openWebSerial, type Transport } from "./transport";
 
-export type ActiveJob = { job: Job; sim: Simulation };
+/** A job being plotted, with what it was simulated as (and the sheet, if it has one). */
+export type ActiveJob = { job: Job; sim: Simulation; paper?: { width: number; height: number } };
 
 /** Holds the current transport outside React state; the streamer writes through it. */
 class Pipe {

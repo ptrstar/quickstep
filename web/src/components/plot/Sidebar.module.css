@@ -1,0 +1,187 @@
+.card {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  padding: 14px 16px;
+  background: var(--panel);
+  border: 1px solid var(--border);
+  border-radius: 12px;
+}
+
+.big {
+  display: flex;
+  align-items: baseline;
+  gap: 10px;
+}
+
+.big span {
+  font: 500 34px var(--font-mono), monospace;
+}
+
+.big small,
+.muted {
+  color: var(--muted);
+  font-size: 13px;
+}
+
+.card progress {
+  width: 100%;
+  height: 10px;
+}
+
+.bar {
+  display: flex;
+  height: 12px;
+  border-radius: 6px;
+  overflow: hidden;
+  background: var(--panel-2);
+}
+
+.legend {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px 16px;
+  font-size: 12px;
+  color: var(--text-2);
+}
+
+.legend span {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+
+.legend i {
+  width: 8px;
+  height: 8px;
+  border-radius: 2px;
+}
+
+.chips {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 8px;
+}
+
+.chips div {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  padding: 8px 10px;
+  background: var(--panel-2);
+  border-radius: 8px;
+}
+
+.chips b {
+  font: 500 15px var(--font-mono), monospace;
+}
+
+.chips small {
+  font-size: 12px;
+  color: var(--muted);
+}
+
+.details {
+  font-size: 13px;
+  color: var(--text-2);
+}
+
+.details summary {
+  cursor: pointer;
+}
+
+.details div {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 4px 12px;
+  padding-top: 8px;
+  font: 400 12px var(--font-mono), monospace;
+}
+
+.actions {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 8px;
+}
+
+.actions > button {
+  min-height: 46px;
+  border-radius: 10px;
+}
+
+.actions > p {
+  grid-column: 1 / -1;
+}
+
+.link {
+  border: 0;
+  background: none;
+  padding: 0;
+  color: var(--accent-text);
+  text-decoration: underline;
+}
+
+.head {
+  display: flex;
+  align-items: baseline;
+  gap: 10px;
+}
+
+.error {
+  color: var(--danger);
+  font-size: 13px;
+}
+
+.row {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+}
+
+.setup {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+
+.disabled {
+  opacity: 0.55;
+}
+
+.jogRow {
+  display: flex;
+  gap: 16px;
+  align-items: center;
+}
+
+.jog {
+  display: grid;
+  grid-template-columns: repeat(3, 44px);
+  gap: 6px;
+  padding: 2px;
+  border-radius: 8px;
+}
+
+.jog button {
+  height: 44px;
+  padding: 0;
+}
+
+.jogSide {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  font-size: 13px;
+}
+
+.jogSide label {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  color: var(--text-2);
+}
+
+.mono {
+  font-family: var(--font-mono), monospace;
+  color: var(--text-2);
+}

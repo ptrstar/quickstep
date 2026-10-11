@@ -8,7 +8,7 @@ import { downloadJson, useLibrary } from "./design/library";
 import { useGraphEngine } from "./design/useGraphEngine";
 import { useProject } from "./design/useProject";
 import { usePlotter } from "./plotter/usePlotter";
-import { Workbench } from "./Workbench";
+import { PlotScreen } from "./plot/PlotScreen";
 
 const PLOTTER_TEXT: Record<string, string> = {
   disconnected: "Plotter not connected",
@@ -135,7 +135,7 @@ export function App() {
           onMessage={setMessage}
         />
       ) : (
-        <Workbench plotter={plotter} drawing={engine.drawing} />
+        <PlotScreen plotter={plotter} drawing={engine.drawing} onBackToDesign={() => setStep("design")} />
       )}
 
       {message && (

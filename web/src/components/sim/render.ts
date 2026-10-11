@@ -21,14 +21,17 @@ export function speedColor(f: number): string {
 
 export type View = { scale: number; ox: number; oy: number };
 
-/** Fits all moves of the simulation into a canvas of the given size, with a margin. */
-export function fitView(sim: Simulation, width: number, height: number): View {
+/**
+ * Fits the sheet of paper (when given) or else all moves of the simulation into a canvas of the
+ * given size, with a margin.
+ */
+export function fitView(sim: Simulation, width: number, height: number, paper?: { width: number; height: number }): View {
   let minX = 0;
   let minY = 0;
-  let maxX = 0;
-  let maxY = 0;
+  let maxX = paper?.width ?? 0;
+  let maxY = paper?.height ?? 0;
   for (const e of sim.events) {
-    if (e.kind !== "move") continue;
+    if (e.kind !== "move" || paper) continue;
     for (const p of [e.from, e.to]) {
       minX = Math.min(minX, p.x);
       maxX = Math.max(maxX, p.x);
@@ -36,7 +39,7 @@ export function fitView(sim: Simulation, width: number, height: number): View {
       maxY = Math.max(maxY, p.y);
     }
   }
-  const scale = (0.94 * Math.min(width, height)) / Math.max(maxX - minX, maxY - minY, 1);
+  const scale = Math.min((0.94 * width) / Math.max(maxX - minX, 1), (0.94 * height) / Math.max(maxY - minY, 1));
   return {
     scale,
     ox: (width - (maxX - minX) * scale) / 2 - minX * scale,
@@ -82,6 +85,8 @@ export function drawProgress(
   lineWidth: number,
   maxSpeed: number,
   partial?: { index: number; t: number },
+  /** A fixed colour (ink view) instead of colouring by speed. */
+  color?: string,
 ) {
   ctx.save();
   ctx.lineCap = "round";
@@ -89,7 +94,7 @@ export function drawProgress(
   const line = (e: MoveEvent, end: Point) => {
     const a = toCanvas(v, e.from);
     const b = toCanvas(v, end);
-    ctx.strokeStyle = speedColor(e.profile.peak / maxSpeed);
+    ctx.strokeStyle = color ?? speedColor(e.profile.peak / maxSpeed);
     ctx.beginPath();
     ctx.moveTo(a.x, a.y);
     ctx.lineTo(b.x, b.y);

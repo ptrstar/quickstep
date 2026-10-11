@@ -1,0 +1,110 @@
+.panel {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  min-width: 0;
+  min-height: 0;
+  padding: 12px 14px;
+  background: var(--panel);
+  border: 1px solid var(--border);
+  border-radius: 12px;
+}
+
+.bar {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 10px 14px;
+}
+
+.follow {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  color: var(--accent-text);
+  font-size: 13px;
+}
+
+.readout {
+  margin-left: auto;
+  font: 500 12px var(--font-mono), monospace;
+  color: var(--muted);
+}
+
+.toggle {
+  display: flex;
+  padding: 3px;
+  background: var(--panel-2);
+  border: 1px solid var(--border);
+  border-radius: 8px;
+}
+
+.toggle button {
+  border: 0;
+  background: transparent;
+  color: var(--text-2);
+}
+
+.toggle button[aria-pressed="true"] {
+  background: var(--text);
+  color: var(--bg);
+  font-weight: 600;
+}
+
+.stage {
+  position: relative;
+  flex: 1 1 auto;
+  min-height: 320px;
+  background: var(--canvas);
+  border-radius: 8px;
+  overflow: hidden;
+}
+
+.stage canvas {
+  position: absolute;
+  inset: 0;
+}
+
+.legend {
+  position: absolute;
+  right: 12px;
+  top: 12px;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 6px;
+  font: 500 11px var(--font-mono), monospace;
+  color: var(--muted);
+}
+
+.ramp {
+  width: 10px;
+  height: 140px;
+  border-radius: 3px;
+  background: linear-gradient(#fde725, #5ec962, #21918c, #3b528b, #440154);
+}
+
+.transport {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+
+.transport input[type="range"] {
+  flex: 1 1 auto;
+}
+
+.time {
+  font: 500 12px var(--font-mono), monospace;
+  color: var(--muted);
+  white-space: nowrap;
+}
+
+.graphs {
+  width: 100%;
+}
+
+.graphs canvas {
+  display: block;
+  cursor: pointer;
+}

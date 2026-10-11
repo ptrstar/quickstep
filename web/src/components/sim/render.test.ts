@@ -27,4 +27,13 @@ describe("fitView", () => {
       }
     }
   });
+
+  it("fits the whole sheet when a paper is given, centred", () => {
+    const sim = simulate(compile([[{ x: 10, y: 10 }, { x: 20, y: 20 }]], DEFAULT_PARAMS));
+    const v = fitView(sim, 400, 400, { width: 105, height: 148 });
+    const a = toCanvas(v, { x: 0, y: 0 });
+    const b = toCanvas(v, { x: 105, y: 148 });
+    expect(b.y - a.y).toBeCloseTo(0.94 * 400, 6);
+    expect((a.x + b.x) / 2).toBeCloseTo(200, 6);
+  });
 });

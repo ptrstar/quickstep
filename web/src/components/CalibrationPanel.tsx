@@ -1,7 +1,7 @@
 "use client";
 
 import { type CalibrationCell, type CalibrationConfig, parseList } from "@/core/calibration";
-import styles from "./Workbench.module.css";
+import styles from "./CalibrationPanel.module.css";
 
 /** Settings of the calibration sheet, and the legend to read the plotted sheet with. */
 export function CalibrationPanel({

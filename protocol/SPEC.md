@@ -148,12 +148,18 @@ are in mm: `dx / steps_per_mm_x`, `dy / steps_per_mm_y`.
 (`s = 0`) means `v_j = 0`.
 
 **Lookahead.** The planner holds at most **20** segments. The last queued segment always ends at speed 0,
-because nothing is known beyond it, and so does every segment before a barrier. On each new segment:
+because nothing is known beyond it, and so does every segment before a barrier.
 
-1. Backward pass, newest → oldest: `v_entry[i] = min(v_j[i], sqrt(v_entry[i+1]² + 2·a_i·L_i))`.
-2. Forward pass, oldest → newest: `v_entry[i+1] = min(v_entry[i+1], sqrt(v_entry[i]² + 2·a_i·L_i))`.
+The reference behaviour assumes the host keeps the buffer full. When segment `i` starts executing, the
+planner knows segments `i … i+19`, or fewer if a barrier comes first, and freezes the profile of `i`:
 
-The segment currently executing has a fixed entry speed.
+1. Backward pass over the window, from its last segment (exit 0) down to `i+1`:
+   `b = min(v_j[k], sqrt(b² + 2·a_k·L_k))`. The result `b` is the highest exit speed of `i`.
+2. Forward limit: `exit_i = min(b, sqrt(entry_i² + 2·a_i·L_i))`. `entry_i` is the frozen exit of `i−1`
+   (0 after a barrier).
+
+If the buffer runs low, the window is shorter and the device is only more cautious. The simulator
+(`web/src/core/sim/planner.ts`) implements exactly this.
 
 **Profile.** Each segment runs a trapezoid: accelerate at `a` from entry speed up to `v_nom`, cruise, then
 decelerate at `a` to the exit speed. It is a triangle if too short to reach `v_nom`.

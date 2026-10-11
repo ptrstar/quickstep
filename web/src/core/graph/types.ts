@@ -1,4 +1,5 @@
 import type { Point, Stroke } from "../geometry";
+import type { Font } from "../text/font";
 
 /** What flows along a wire. Ports only connect to ports of the same type. */
 export type DataType = "image" | "gray" | "lines" | "drawing";
@@ -13,7 +14,12 @@ export type GrayImage = { width: number; height: number; data: Float32Array };
 export type Lines = { width: number; height: number; strokes: Stroke[] };
 
 /** Pen paths in mm on a sheet of paper; (0, 0) is the paper's top-left corner. */
-export type PaperDrawing = { paper: { width: number; height: number }; strokes: Stroke[] };
+export type PaperDrawing = {
+  paper: { width: number; height: number };
+  strokes: Stroke[];
+  /** Warnings worth showing, e.g. characters a font does not have. */
+  notes?: string[];
+};
 
 export type DataValue = {
   image: RgbaImage;
@@ -35,7 +41,9 @@ export type ParamSpec =
   | { kind: "boolean"; label: string; default: boolean }
   | { kind: "text"; label: string; default: string; multiline?: boolean }
   /** Reference to an image the user loaded. Not stored in presets' assets, only its key. */
-  | { kind: "asset"; label: string; default: string };
+  | { kind: "asset"; label: string; default: string }
+  /** A built-in font key, or the key of a font file the user loaded. */
+  | { kind: "font"; label: string; default: string };
 
 export type ParamValue = number | string | boolean;
 export type Params = Record<string, ParamValue>;
@@ -43,7 +51,7 @@ export type Params = Record<string, ParamValue>;
 /** Images loaded by the user, by key. Kept outside the graph so presets stay small. */
 export type Assets = ReadonlyMap<string, RgbaImage>;
 
-export type ComputeContext = { assets: Assets };
+export type ComputeContext = { assets: Assets; fonts?: ReadonlyMap<string, Font> };
 
 export type NodeDef = {
   type: string;

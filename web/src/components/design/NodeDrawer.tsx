@@ -15,6 +15,7 @@ import {
 } from "@/core/graph";
 import styles from "./NodeDrawer.module.css";
 import { TYPE_COLOR } from "./layout";
+import type { FontInfo } from "./useGraphEngine";
 
 type Edit = (change: (g: GraphDoc) => GraphDoc, opts?: { coalesce?: string }) => void;
 
@@ -30,6 +31,8 @@ type Props = {
   onEdit: Edit;
   onTogglePin: (node: string, param: string) => void;
   onLoadImage: (node: string, file: File) => void;
+  fonts: FontInfo[];
+  onLoadFont: (node: string, param: string, file: File) => void;
   onClose: () => void;
   onGroup: () => void;
   onUngroup: (id: string) => void;
@@ -45,6 +48,8 @@ function Control({
   onChange,
   assetName,
   onLoadImage,
+  fonts,
+  onLoadFont,
   pin,
 }: {
   spec: ParamSpec;
@@ -52,6 +57,8 @@ function Control({
   onChange: (v: ParamValue) => void;
   assetName?: string;
   onLoadImage?: (file: File) => void;
+  fonts?: FontInfo[];
+  onLoadFont?: (file: File) => void;
   pin?: { pinned: boolean; toggle: () => void };
 }) {
   const pinButton = pin && (
@@ -120,6 +127,39 @@ function Control({
           )}
         </label>
       );
+    case "font": {
+      const known = fonts?.some((f) => f.key === value);
+      return (
+        <div className={styles.control}>
+          <label className={styles.row}>
+            <span>{spec.label}</span>
+            <select value={known ? (value as string) : ""} onChange={(e) => e.target.value && onChange(e.target.value)}>
+              {!known && <option value="">font not loaded in this session</option>}
+              <optgroup label="Single-line">
+                {fonts?.filter((f) => f.kind === "single-line").map((f) => (
+                  <option key={f.key} value={f.key}>
+                    {f.name}
+                  </option>
+                ))}
+              </optgroup>
+              <optgroup label="Outline (drawn as outlines)">
+                {fonts?.filter((f) => f.kind === "outline").map((f) => (
+                  <option key={f.key} value={f.key}>
+                    {f.name}
+                  </option>
+                ))}
+              </optgroup>
+            </select>
+            {pinButton}
+          </label>
+          <label className={styles.file}>
+            Load a font file (SVG font, TTF, OTF, WOFF)
+            <span className={styles.fileButton}>Load…</span>
+            <input type="file" accept=".svg,.ttf,.otf,.woff,font/ttf,font/otf,font/woff,image/svg+xml" onChange={(e) => e.target.files?.[0] && onLoadFont?.(e.target.files[0])} />
+          </label>
+        </div>
+      );
+    }
     case "asset":
       return (
         <div className={styles.control}>
@@ -144,6 +184,8 @@ function ParamControls({
   pins,
   assetName,
   onLoadImage,
+  fonts,
+  onLoadFont,
 }: {
   registry: Registry;
   nodeType: string;
@@ -153,6 +195,8 @@ function ParamControls({
   pins?: { isPinned: (key: string) => boolean; toggle: (key: string) => void };
   assetName: (key: string) => string | undefined;
   onLoadImage?: (file: File) => void;
+  fonts?: FontInfo[];
+  onLoadFont?: (key: string, file: File) => void;
 }) {
   const def = registry.get(nodeType);
   if (!def) return null;
@@ -168,6 +212,8 @@ function ParamControls({
             onChange={(v) => onChange(key, v)}
             assetName={spec.kind === "asset" ? assetName(params[key] as string) : undefined}
             onLoadImage={onLoadImage}
+            fonts={fonts}
+            onLoadFont={(file) => onLoadFont?.(key, file)}
             pin={pins && { pinned: pins.isPinned(key), toggle: () => pins.toggle(key) }}
           />
         ))}
@@ -249,6 +295,7 @@ export function NodeDrawer(p: Props) {
                 params={n.params}
                 only={[param]}
                 assetName={p.assetName}
+                fonts={p.fonts}
                 onChange={(key, v) => p.onEdit((g) => updateAt(g, [group.id], (ig) => setParam(registry, ig, inner, key, v)), { coalesce: `${group.id}/${inner}:${key}` })}
               />
             );
@@ -288,6 +335,8 @@ export function NodeDrawer(p: Props) {
         params={node.params}
         assetName={p.assetName}
         onLoadImage={(file) => p.onLoadImage(node.id, file)}
+        fonts={p.fonts}
+        onLoadFont={(key, file) => p.onLoadFont(node.id, key, file)}
         onChange={(key, v) => p.onEdit((g) => setParam(registry, g, node.id, key, v), { coalesce: `${node.id}:${key}` })}
         pins={
           p.parent && {

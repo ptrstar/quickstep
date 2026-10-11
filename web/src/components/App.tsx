@@ -26,11 +26,11 @@ const PLOTTER_TEXT: Record<string, string> = {
 export function App() {
   const [step, setStep] = useState<"design" | "plot">("design");
   const project = useProject();
-  const engine = useGraphEngine(project.doc);
+  const [message, setMessage] = useState<string>();
+  const engine = useGraphEngine(project.doc, setMessage);
   const library = useLibrary();
   const plotter = usePlotter();
   const [assetNames, setAssetNames] = useState(new Map<string, string>());
-  const [message, setMessage] = useState<string>();
   const importInput = useRef<HTMLInputElement>(null);
 
   useEffect(() => {

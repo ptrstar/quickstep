@@ -3,6 +3,10 @@ import type { Registry } from "../doc";
 import type { GrayImage, Lines, NodeDef, PaperDrawing, RgbaImage } from "../types";
 import { NeedsInput } from "../types";
 import { optimizeStrokes, travelLength } from "./optimize";
+import { PAPER_SIZES, paperSize } from "./paper";
+import { mergeNode, postcardNode, textNode } from "./text";
+
+export { PAPER_SIZES, paperSize };
 import { boxBlur, contrast, downscale, grayscale, invert, sample } from "./pixels";
 
 const px = (img: { width: number; height: number }) => `${img.width} × ${img.height} px`;
@@ -127,21 +131,6 @@ const amplifyLine: NodeDef = {
   },
 };
 
-/** Paper sizes in mm, portrait. */
-export const PAPER_SIZES: Record<string, { label: string; width: number; height: number }> = {
-  a6: { label: "A6 · 105 × 148", width: 105, height: 148 },
-  a5: { label: "A5 · 148 × 210", width: 148, height: 210 },
-  a4: { label: "A4 · 210 × 297", width: 210, height: 297 },
-  custom: { label: "Custom", width: 0, height: 0 },
-};
-
-export function paperSize(p: Record<string, unknown>): { width: number; height: number } {
-  const preset = PAPER_SIZES[p.size as string] ?? PAPER_SIZES.a6;
-  const base = p.size === "custom" ? { width: p.width as number, height: p.height as number } : preset;
-  const [short, long] = [Math.min(base.width, base.height), Math.max(base.width, base.height)];
-  return p.orientation === "landscape" ? { width: long, height: short } : { width: short, height: long };
-}
-
 const paper: NodeDef = {
   type: "paper",
   label: "Paper",
@@ -216,7 +205,7 @@ const optimize: NodeDef = {
       order: p.order === "nearest",
       join: p.join as number,
     });
-    return { drawing: { paper: d.paper, strokes } satisfies PaperDrawing };
+    return { drawing: { paper: d.paper, strokes, notes: d.notes } satisfies PaperDrawing };
   },
   summary: (out, _, inp) => {
     const a = inp.drawing as PaperDrawing;
@@ -226,6 +215,6 @@ const optimize: NodeDef = {
   },
 };
 
-export const NODE_DEFS: NodeDef[] = [image, toGray, invertNode, contrastNode, blurNode, amplifyLine, paper, optimize];
+export const NODE_DEFS: NodeDef[] = [image, toGray, invertNode, contrastNode, blurNode, amplifyLine, paper, textNode, postcardNode, mergeNode, optimize];
 
 export const registry: Registry = new Map(NODE_DEFS.map((d) => [d.type, d]));

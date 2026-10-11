@@ -114,7 +114,8 @@ export class Evaluator {
           };
         }
       }
-      next.set(id, entry);
+      // a node waiting for an image or font must retry when it arrives, so it is not cached
+      if (entry.status.state !== "waiting") next.set(id, entry);
       versionOf.set(id, entry.version);
       if (entry.status.state === "ok" || entry.status.state === "bypassed") outputs.set(id, entry.outputs);
       status.set(id, entry.status);

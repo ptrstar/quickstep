@@ -218,6 +218,11 @@ export function DesignScreen({
                 )
               }
               onLoadImage={loadImage}
+              fonts={engine.fonts}
+              onLoadFont={async (nodeId, param, file) => {
+                const key = await engine.addFont(file);
+                project.edit((g) => setParam(registry, g, nodeId, param, key));
+              }}
               onClose={() => project.setDrawer(false)}
               onGroup={group}
               onUngroup={ungroupSelected}

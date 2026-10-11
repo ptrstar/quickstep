@@ -3,6 +3,7 @@ import { Evaluator, type NodeStatus } from "./evaluate";
 import { makeThumb, type Thumb } from "./thumbs";
 import type { Assets, PaperDrawing, RgbaImage } from "./types";
 import type { Registry } from "./doc";
+import type { Font } from "../text/font";
 
 /** What one evaluation sends to the UI. */
 export type SessionResult = {
@@ -21,6 +22,7 @@ export type SessionResult = {
 export class GraphSession {
   private evaluator: Evaluator;
   private assets = new Map<string, RgbaImage>();
+  private fonts = new Map<string, Font>();
 
   constructor(registry: Registry) {
     this.evaluator = new Evaluator(registry);
@@ -30,13 +32,17 @@ export class GraphSession {
     this.assets.set(key, image);
   }
 
+  addFont(key: string, font: Font) {
+    this.fonts.set(key, font);
+  }
+
   get assetMap(): Assets {
     return this.assets;
   }
 
   run(doc: GraphDoc): SessionResult {
     const t0 = Date.now();
-    const result = this.evaluator.run(doc, { assets: this.assets });
+    const result = this.evaluator.run(doc, { assets: this.assets, fonts: this.fonts });
     const thumbs: [string, Thumb][] = [];
     const cleared: string[] = [];
     for (const node of result.flat.nodes) {

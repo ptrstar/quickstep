@@ -2,7 +2,11 @@
 
 import { useCallback, useEffect, useRef, useState } from "react";
 import type { GraphDoc, NodeStatus, PaperDrawing, RgbaImage, Thumb } from "@/core/graph";
+import { newId } from "@/core/graph";
+import { BUILTIN_FONTS } from "@/core/text/builtin";
 import type { FromWorker, ToWorker } from "@/workers/graph.worker";
+
+export type FontInfo = { key: string; name: string; kind: "single-line" | "outline"; builtin: boolean };
 
 export type EngineState = {
   status: Map<string, NodeStatus>;
@@ -14,14 +18,23 @@ export type EngineState = {
 
 /**
  * Runs the graph in a Web Worker whenever it changes. Only the newest graph is evaluated: edits
- * that arrive while a run is busy replace each other, and the latest one runs next.
+ * that arrive while a run is busy replace each other, and the latest one runs next. Also loads the
+ * built-in fonts, and fonts the user picks, into the worker.
  */
-export function useGraphEngine(doc: GraphDoc) {
+export function useGraphEngine(doc: GraphDoc, onMessage: (text: string) => void = () => {}) {
   const worker = useRef<Worker | null>(null);
   const pending = useRef<GraphDoc | null>(null);
+  const latest = useRef<GraphDoc>(doc);
   const running = useRef(false);
   const runId = useRef(0);
+  const message = useRef(onMessage);
   const [state, setState] = useState<EngineState>({ status: new Map(), thumbs: new Map(), busy: false });
+  const [fonts, setFonts] = useState<FontInfo[]>(BUILTIN_FONTS.map((f) => ({ key: f.key, name: f.label, kind: "single-line", builtin: true })));
+
+  useEffect(() => {
+    message.current = onMessage;
+    latest.current = doc;
+  });
 
   const post = useCallback((msg: ToWorker, transfer: Transferable[] = []) => worker.current?.postMessage(msg, transfer), []);
 
@@ -34,12 +47,27 @@ export function useGraphEngine(doc: GraphDoc) {
     post({ type: "run", id: ++runId.current, doc: next });
   }, [post]);
 
+  /** Evaluate again (e.g. a font arrived that a node was waiting for). */
+  const rerun = useCallback(() => {
+    pending.current = latest.current;
+    runNext();
+  }, [runNext]);
+
   useEffect(() => {
     const w = new Worker(new URL("../../workers/graph.worker.ts", import.meta.url), { type: "module" });
     worker.current = w;
     w.onmessage = (e: MessageEvent<FromWorker>) => {
-      running.current = false;
       const msg = e.data;
+      if (msg.type === "font") {
+        if (msg.ok) {
+          setFonts((list) => (list.some((f) => f.key === msg.key) ? list : [...list, { key: msg.key, name: msg.name, kind: msg.kind, builtin: false }]));
+          rerun();
+        } else {
+          message.current(`Could not read the font: ${msg.error}`);
+        }
+        return;
+      }
+      running.current = false;
       if (msg.type === "failed") {
         setState((s) => ({ ...s, busy: false, error: msg.error }));
       } else {
@@ -53,13 +81,19 @@ export function useGraphEngine(doc: GraphDoc) {
       }
       runNext();
     };
+    for (const f of BUILTIN_FONTS) {
+      fetch(`/fonts/${f.file}`)
+        .then((r) => (r.ok ? r.text() : Promise.reject(new Error(`${r.status}`))))
+        .then((data) => w.postMessage({ type: "font", key: f.key, format: "svg", data } satisfies ToWorker))
+        .catch(() => message.current(`Could not load the font ${f.label}`));
+    }
     runNext();
     return () => {
       w.terminate();
       worker.current = null;
       running.current = false;
     };
-  }, [runNext]);
+  }, [runNext, rerun]);
 
   useEffect(() => {
     pending.current = doc;
@@ -69,7 +103,21 @@ export function useGraphEngine(doc: GraphDoc) {
   /** Hands a loaded image to the worker. The graph refers to it by `key`. */
   const addAsset = useCallback((key: string, image: RgbaImage) => post({ type: "asset", key, image }), [post]);
 
-  return { ...state, addAsset };
+  /** Loads a font file (SVG font, TTF, OTF, WOFF); returns the key nodes refer to it by. */
+  const addFont = useCallback(
+    async (file: File): Promise<string> => {
+      const key = `font:${file.name}#${newId("f")}`;
+      if (/\.svg$/i.test(file.name)) post({ type: "font", key, format: "svg", data: await file.text() });
+      else {
+        const data = await file.arrayBuffer();
+        post({ type: "font", key, format: "binary", data }, [data]);
+      }
+      return key;
+    },
+    [post],
+  );
+
+  return { ...state, fonts, addAsset, addFont };
 }
 
 /** Decodes an image file into pixels, at most `maxSide` px on the longer side. */

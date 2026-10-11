@@ -1,3 +1,4 @@
+import { isBuiltinFont } from "../text/builtin";
 import { type Edge, type GraphDoc, type GraphNode, normalizeParams, portsOf, type Registry } from "./doc";
 
 /**
@@ -26,7 +27,10 @@ function stripAssets(registry: Registry, doc: GraphDoc): GraphDoc {
       const def = registry.get(n.type);
       if (!def) return n;
       const params = { ...n.params };
-      for (const [key, spec] of Object.entries(def.params)) if (spec.kind === "asset") params[key] = "";
+      for (const [key, spec] of Object.entries(def.params)) {
+        if (spec.kind === "asset") params[key] = "";
+        if (spec.kind === "font" && !isBuiltinFont(String(params[key]))) params[key] = spec.default;
+      }
       return { ...n, params };
     }),
   };

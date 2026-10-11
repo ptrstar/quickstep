@@ -324,7 +324,7 @@ const stippling: NodeDef = {
   type: "stipple",
   label: "Stippling",
   description:
-    "Dots placed by darkness and relaxed until evenly spaced within each tone. Dots cost a pen lift each (about 0.3 s); 'one line' joins them into a single continuous stroke instead.",
+    "Dots placed by darkness and relaxed until evenly spaced within each tone, drawn as dots (radius 0) or circles of the given radius. Each mark costs a pen lift (about 0.3 s); 'one line' joins them into a single continuous stroke instead.",
   inputs: [{ name: "gray", type: "gray" }],
   outputs: [{ name: "lines", type: "lines" }],
   params: {
@@ -332,14 +332,13 @@ const stippling: NodeDef = {
     style: {
       kind: "select",
       label: "Draw as",
-      default: "dots",
+      default: "marks",
       options: [
-        { value: "dots", label: "dots (pen taps)" },
-        { value: "circles", label: "circles, sized by darkness" },
+        { value: "marks", label: "dots or circles (see radius)" },
         { value: "line", label: "one continuous line (TSP art)" },
       ],
     },
-    size: { kind: "number", label: "Largest circle", default: 1.5, min: 0.3, max: 10, step: 0.1, unit: "px radius" },
+    size: { kind: "number", label: "Circle radius", default: 0, min: 0, max: 10, step: 0.1, unit: "px (0 = dot)" },
     iterations: { kind: "number", label: "Relaxation", default: 30, min: 0, max: 100, step: 1, unit: "rounds" },
     gamma: { kind: "number", label: "Tone contrast", default: 1.3, min: 0.3, max: 4, step: 0.05 },
     cutoff: { kind: "number", label: "Lightest stippled tone", default: 0.92, min: 0.05, max: 1, step: 0.01 },
@@ -347,7 +346,7 @@ const stippling: NodeDef = {
   },
   compute(inp, p) {
     const g = inp.gray as GrayImage;
-    const { points, density } = stipple(g, {
+    const { points } = stipple(g, {
       points: p.points as number,
       iterations: p.iterations as number,
       gamma: p.gamma as number,
@@ -355,14 +354,15 @@ const stippling: NodeDef = {
       seed: p.seed as number,
     });
     let strokes: Stroke[];
+    const r = p.size as number;
     if (p.style === "line") strokes = points.length ? [tour(points)] : [];
-    else if (p.style === "circles") strokes = points.map((c, i) => circle(c, Math.max(0.15, (p.size as number) * Math.sqrt(density[i]))));
+    else if (r > 0) strokes = points.map((c) => circle(c, r));
     else strokes = points.map((c) => [c]);
     return { lines: { width: g.width, height: g.height, strokes } satisfies Lines };
   },
   summary: (out, p) => {
     const l = out.lines as Lines;
-    return p.style === "line" ? `one line · ${count(l.strokes[0]?.length ?? 0)} dots` : `${count(l.strokes.length)} ${p.style}`;
+    return p.style === "line" ? `one line · ${count(l.strokes[0]?.length ?? 0)} dots` : `${count(l.strokes.length)} ${(p.size as number) > 0 ? "circles" : "dots"}`;
   },
 };
 

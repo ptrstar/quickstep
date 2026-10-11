@@ -102,18 +102,21 @@ describe("Stippling node", () => {
     return registry.get("stipple")!.compute({ gray: g }, n.params, { assets: new Map() }).lines as Lines;
   };
 
-  it("dots are single points", () => {
-    const l = run({ style: "dots" });
+  it("radius 0 draws dots: single points", () => {
+    const l = run({ style: "marks", size: 0 });
     expect(l.strokes).toHaveLength(200);
     expect(l.strokes.every((s) => s.length === 1)).toBe(true);
   });
 
-  it("circles are closed and no larger than the largest size", () => {
-    for (const s of run({ style: "circles", size: 2 }).strokes) {
+  it("a radius above 0 draws closed circles of exactly that radius", () => {
+    const l = run({ style: "marks", size: 2 });
+    expect(l.strokes).toHaveLength(200);
+    for (const s of l.strokes) {
       expect(s[0].x).toBeCloseTo(s.at(-1)!.x);
       expect(s[0].y).toBeCloseTo(s.at(-1)!.y);
-      const cx = s.reduce((a, p) => a + p.x, 0) / s.length;
-      expect(Math.max(...s.map((p) => Math.abs(p.x - cx)))).toBeLessThanOrEqual(2 + 1e-6);
+      const cx = s.slice(1).reduce((a, p) => a + p.x, 0) / (s.length - 1);
+      const cy = s.slice(1).reduce((a, p) => a + p.y, 0) / (s.length - 1);
+      for (const p of s) expect(Math.hypot(p.x - cx, p.y - cy)).toBeCloseTo(2, 6);
     }
   });
 

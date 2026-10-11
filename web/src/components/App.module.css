@@ -1,0 +1,104 @@
+.app {
+  height: 100vh;
+  display: flex;
+  flex-direction: column;
+}
+
+.header {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 10px 18px;
+  padding: 10px 20px;
+  background: var(--bar);
+  border-bottom: 1px solid var(--border);
+}
+
+.logo {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  font-weight: 600;
+  font-size: 16px;
+}
+
+.steps {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  color: #5c6370;
+}
+
+.steps button {
+  border: 0;
+  background: transparent;
+  color: var(--text-2);
+  padding: 6px 12px;
+}
+
+.steps button[aria-current="step"] {
+  background: var(--text);
+  color: var(--bg);
+  font-weight: 600;
+}
+
+.presets {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.presets label {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.label {
+  color: var(--muted);
+}
+
+.grow {
+  flex: 1 1 0;
+}
+
+.pill {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 6px 12px;
+  border-radius: 999px;
+  background: var(--panel-2);
+  color: var(--muted);
+  font-size: 13px;
+}
+
+.pillDot {
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+  background: currentColor;
+}
+
+.pillOk {
+  background: #1e2a22;
+  color: var(--ok);
+}
+
+.pillBusy {
+  background: #1e2633;
+  color: var(--accent-text);
+}
+
+.toast {
+  position: fixed;
+  left: 50%;
+  bottom: 24px;
+  transform: translateX(-50%);
+  z-index: 30;
+  padding: 10px 16px;
+  border-radius: 8px;
+  background: var(--panel-2);
+  border: 1px solid var(--border-strong);
+  box-shadow: 0 8px 24px rgba(0, 0, 0, 0.5);
+}

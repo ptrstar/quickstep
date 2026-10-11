@@ -4,3 +4,7 @@ export * from "./group";
 export * from "./evaluate";
 export * from "./preset";
 export { inkLength, NODE_DEFS, PAPER_SIZES, paperSize, registry } from "./nodes";
+export * from "./path";
+export * from "./thumbs";
+export * from "./defaults";
+export * from "./session";

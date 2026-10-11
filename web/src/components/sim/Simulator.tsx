@@ -129,7 +129,7 @@ export function Simulator({ sim, liveTime }: { sim: Simulation; liveTime?: numbe
       ctx.lineTo(cx, box.y + box.h);
       ctx.stroke();
       ctx.fillStyle = color;
-      ctx.font = "11px var(--font-geist-mono), monospace";
+      ctx.font = "11px var(--font-mono), monospace";
       ctx.fillText(`${vmax.toFixed(0)} mm/s`, box.x + 4, box.y + 12);
       ctx.fillText(t1 - t0 === ZOOM_WINDOW ? `±${ZOOM_WINDOW / 2} s` : "whole job", box.x + 4, box.y + box.h - 4);
     }

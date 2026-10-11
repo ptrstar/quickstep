@@ -26,8 +26,11 @@ export type Value = DataValue[DataType];
 
 export type Port = { name: string; type: DataType };
 
+/** Show a control only while another select param has a given value. */
+export type ParamCondition = { param: string; is: string };
+
 export type ParamSpec =
-  | { kind: "number"; label: string; default: number; min: number; max: number; step: number; unit?: string }
+  | { kind: "number"; label: string; default: number; min: number; max: number; step: number; unit?: string; when?: ParamCondition }
   | { kind: "select"; label: string; default: string; options: { value: string; label: string }[] }
   | { kind: "boolean"; label: string; default: boolean }
   | { kind: "text"; label: string; default: string; multiline?: boolean }

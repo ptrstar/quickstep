@@ -158,8 +158,8 @@ const paper: NodeDef = {
         { value: "landscape", label: "landscape" },
       ],
     },
-    width: { kind: "number", label: "Custom width", default: 100, min: 10, max: 500, step: 1, unit: "mm" },
-    height: { kind: "number", label: "Custom height", default: 150, min: 10, max: 500, step: 1, unit: "mm" },
+    width: { kind: "number", label: "Width", default: 100, min: 10, max: 500, step: 1, unit: "mm", when: { param: "size", is: "custom" } },
+    height: { kind: "number", label: "Height", default: 150, min: 10, max: 500, step: 1, unit: "mm", when: { param: "size", is: "custom" } },
     margin: { kind: "number", label: "Margin", default: 6, min: 0, max: 50, step: 0.5, unit: "mm" },
   },
   compute(inp, p) {

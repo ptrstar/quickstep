@@ -1,34 +1,28 @@
+/* Dark workspace, white paper (agreed UI direction). */
 :root {
-  --background: #ffffff;
-  --foreground: #171717;
-}
-
-@media (prefers-color-scheme: dark) {
-  :root {
-    --background: #0a0a0a;
-    --foreground: #ededed;
-  }
-}
-
-html {
-  height: 100%;
-}
-
-html,
-body {
-  max-width: 100vw;
-  overflow-x: hidden;
-}
-
-body {
-  min-height: 100%;
-  display: flex;
-  flex-direction: column;
-  color: var(--foreground);
-  background: var(--background);
-  font-family: Arial, Helvetica, sans-serif;
-  -webkit-font-smoothing: antialiased;
-  -moz-osx-font-smoothing: grayscale;
+  color-scheme: dark;
+  --bg: #121417;
+  --bar: #16191d;
+  --panel: #1a1d22;
+  --panel-2: #20242b;
+  --canvas: #15181c;
+  --border: #2c313a;
+  --border-strong: #3a404b;
+  --text: #e6e8ec;
+  --text-2: #c5cad3;
+  --muted: #a3aab6;
+  --accent: #6ea8ff;
+  --accent-text: #9cc3ff;
+  --on-accent: #0b1220;
+  --danger: #ff8a8f;
+  --ok: #8fe3a6;
+  --paper: #fbfbf8;
+  --ink: #1b1d22;
+  /* wire / port colours per data type */
+  --t-image: #f2a65a;
+  --t-gray: #b9c0cc;
+  --t-lines: #6ea8ff;
+  --t-drawing: #8fe3a6;
 }
 
 * {
@@ -37,13 +31,77 @@ body {
   margin: 0;
 }
 
+html,
+body {
+  height: 100%;
+}
+
+body {
+  display: flex;
+  flex-direction: column;
+  color: var(--text);
+  background: var(--bg);
+  font-family: var(--font-sans), system-ui, sans-serif;
+  font-size: 14px;
+  -webkit-font-smoothing: antialiased;
+}
+
 a {
   color: inherit;
   text-decoration: none;
 }
 
-@media (prefers-color-scheme: dark) {
-  html {
-    color-scheme: dark;
-  }
+button,
+select,
+input,
+textarea {
+  font: inherit;
+  color: inherit;
+}
+
+button,
+select {
+  background: var(--panel-2);
+  border: 1px solid var(--border-strong);
+  border-radius: 6px;
+  padding: 5px 10px;
+  cursor: pointer;
+}
+
+button:disabled {
+  opacity: 0.45;
+  cursor: default;
+}
+
+button.primary {
+  background: var(--accent);
+  color: var(--on-accent);
+  border-color: var(--accent);
+  font-weight: 600;
+}
+
+button.danger {
+  background: transparent;
+  color: var(--danger);
+  border-color: #6b2d31;
+}
+
+input[type="number"],
+input[type="text"],
+textarea {
+  background: var(--panel-2);
+  border: 1px solid var(--border);
+  border-radius: 6px;
+  padding: 5px 8px;
+}
+
+input[type="range"],
+input[type="checkbox"],
+progress {
+  accent-color: var(--accent);
+}
+
+:focus-visible {
+  outline: 2px solid var(--accent);
+  outline-offset: 1px;
 }

@@ -19,7 +19,7 @@
 .mono,
 .status,
 .stats {
-  font-family: var(--font-geist-mono), monospace;
+  font-family: var(--font-mono), monospace;
   font-size: 13px;
 }
 

@@ -1,0 +1,68 @@
+.screen {
+  flex: 1 1 auto;
+  min-height: 0;
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) minmax(320px, 34%);
+  gap: 16px;
+  padding: 16px;
+}
+
+@media (max-width: 900px) {
+  .screen {
+    grid-template-columns: 1fr;
+    grid-template-rows: 70vh auto;
+  }
+}
+
+.graphPanel {
+  display: flex;
+  flex-direction: column;
+  min-width: 0;
+  min-height: 0;
+  background: var(--panel);
+  border: 1px solid var(--border);
+  border-radius: 12px;
+  overflow: hidden;
+}
+
+.bar {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 10px;
+  padding: 8px 12px;
+  border-bottom: 1px solid var(--border);
+}
+
+.crumbs {
+  display: flex;
+  align-items: center;
+  font-weight: 600;
+}
+
+.crumbs button {
+  border: 0;
+  background: transparent;
+  padding: 2px 4px;
+  color: var(--accent-text);
+}
+
+.crumbs button[aria-current="page"] {
+  color: var(--text);
+}
+
+.hint {
+  color: var(--muted);
+  font-size: 13px;
+}
+
+.grow {
+  flex: 1 1 0;
+}
+
+.canvasArea {
+  position: relative;
+  flex: 1 1 auto;
+  min-height: 0;
+  display: grid;
+}

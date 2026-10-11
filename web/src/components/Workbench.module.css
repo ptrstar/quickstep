@@ -51,7 +51,7 @@
 
 .calibration table {
   border-collapse: collapse;
-  font-family: var(--font-geist-mono), monospace;
+  font-family: var(--font-mono), monospace;
   font-size: 12px;
 }
 

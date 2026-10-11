@@ -1,5 +1,5 @@
-import { Workbench } from "@/components/Workbench";
+import { App } from "@/components/App";
 
 export default function Home() {
-  return <Workbench />;
+  return <App />;
 }

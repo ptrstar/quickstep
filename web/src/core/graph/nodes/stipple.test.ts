@@ -60,6 +60,13 @@ describe("stipple", () => {
     expect(stipple(gray(30, 30, () => 1), OPTS).points).toEqual([]);
   });
 
+  it("always places the requested number of dots, even on a mostly white picture", () => {
+    const spot = gray(300, 300, (x, y) => (Math.hypot(x - 150, y - 150) < 4 ? 0 : 1));
+    const { points } = stipple(spot, { ...OPTS, points: 2500, iterations: 0 });
+    expect(points).toHaveLength(2500);
+    for (const p of points) expect(Math.hypot(p.x - 150, p.y - 150)).toBeLessThan(6);
+  });
+
   it("darker areas get more dots", () => {
     const ramp = gray(120, 40, (x) => x / 120);
     const { points } = stipple(ramp, OPTS);

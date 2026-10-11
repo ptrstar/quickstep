@@ -21,6 +21,34 @@ export function speedColor(f: number): string {
 
 export type View = { scale: number; ox: number; oy: number };
 
+const dotCache = new WeakMap<Simulation, Map<number, Point>>();
+
+/**
+ * Pen taps (dots): a pen-down event followed directly by a pen-up, with no move in between.
+ * Keyed by the index of the pen-down event.
+ */
+export function dotsOf(sim: Simulation): Map<number, Point> {
+  let dots = dotCache.get(sim);
+  if (!dots) {
+    dots = new Map();
+    const ev = sim.events;
+    for (let i = 0; i + 1 < ev.length; i++) {
+      const a = ev[i];
+      const b = ev[i + 1];
+      if (a.kind === "pen" && a.down && b.kind === "pen" && !b.down) dots.set(i, a.at);
+    }
+    dotCache.set(sim, dots);
+  }
+  return dots;
+}
+
+function dot(ctx: CanvasRenderingContext2D, v: View, p: Point, lineWidth: number) {
+  const c = toCanvas(v, p);
+  const r = Math.max(0.75, lineWidth / 2);
+  ctx.moveTo(c.x + r, c.y);
+  ctx.arc(c.x, c.y, r, 0, 2 * Math.PI);
+}
+
 /**
  * Fits the sheet of paper (when given) or else all moves of the simulation into a canvas of the
  * given size, with a margin.
@@ -69,6 +97,11 @@ export function drawPreview(ctx: CanvasRenderingContext2D, sim: Simulation, v: V
     ctx.setLineDash(penDown ? [] : [3, 4]);
     ctx.stroke();
   }
+  ctx.globalAlpha = 0.25;
+  ctx.fillStyle = ink;
+  ctx.beginPath();
+  for (const p of dotsOf(sim).values()) dot(ctx, v, p, 1.5);
+  ctx.fill();
   ctx.restore();
 }
 
@@ -100,11 +133,26 @@ export function drawProgress(
     ctx.lineTo(b.x, b.y);
     ctx.stroke();
   };
+  const dots = dotsOf(sim);
+  const dotColor = color ?? speedColor(0);
+  ctx.fillStyle = dotColor;
   for (let i = from; i < to; i++) {
     const e = sim.events[i];
     if (e.kind === "move" && e.penDown) line(e, e.to);
+    const d = dots.get(i);
+    if (d) {
+      ctx.beginPath();
+      dot(ctx, v, d, lineWidth);
+      ctx.fill();
+    }
   }
   if (partial) {
+    const d = dots.get(partial.index);
+    if (d) {
+      ctx.beginPath();
+      dot(ctx, v, d, lineWidth);
+      ctx.fill();
+    }
     const e = sim.events[partial.index];
     if (e?.kind === "move" && e.penDown) {
       const f = sample(e.profile, partial.t - e.t0).distance / e.profile.length;

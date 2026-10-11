@@ -106,14 +106,23 @@ export function stipple(g: GrayImage, o: StippleOptions): { points: Point[]; den
   const total = d.reduce((a, v) => a + v, 0);
   if (total === 0 || o.points <= 0) return { points: [], density: [] };
 
-  // initial dots: rejection sampling against the density
+  // initial dots: inverse-transform sampling of the density, so every dot lands on the first try
+  // (rejection sampling runs out of tries on mostly light pictures and returns too few dots)
   const rnd = random(o.seed);
-  const max = d.reduce((a, v) => Math.max(a, v), 0);
+  const cumulative = new Float64Array(w * h);
+  let acc = 0;
+  for (let i = 0; i < w * h; i++) cumulative[i] = acc += d[i];
   let pts: Point[] = [];
-  for (let tries = 0; pts.length < o.points && tries < o.points * 200; tries++) {
-    const x = rnd() * w;
-    const y = rnd() * h;
-    if (rnd() * max < d[Math.floor(y) * w + Math.floor(x)]) pts.push({ x, y });
+  for (let k = 0; k < o.points; k++) {
+    const u = rnd() * acc;
+    let lo = 0;
+    let hi = w * h - 1;
+    while (lo < hi) {
+      const mid = (lo + hi) >> 1;
+      if (cumulative[mid] > u) hi = mid;
+      else lo = mid + 1;
+    }
+    pts.push({ x: (lo % w) + rnd(), y: Math.floor(lo / w) + rnd() });
   }
 
   // Lloyd relaxation on the discrete weighted Voronoi diagram

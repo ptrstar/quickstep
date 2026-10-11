@@ -2,7 +2,7 @@ import { describe, expect, it } from "vitest";
 import { compile } from "@/core/quickstep/compile";
 import { DEFAULT_PARAMS } from "@/core/quickstep/params";
 import { simulate } from "@/core/sim";
-import { fitView, speedColor, toCanvas } from "./render";
+import { dotsOf, fitView, speedColor, toCanvas } from "./render";
 
 describe("speedColor", () => {
   it("clamps and spans the scale", () => {
@@ -35,5 +35,15 @@ describe("fitView", () => {
     const b = toCanvas(v, { x: 105, y: 148 });
     expect(b.y - a.y).toBeCloseTo(0.94 * 400, 6);
     expect((a.x + b.x) / 2).toBeCloseTo(200, 6);
+  });
+});
+
+describe("dotsOf", () => {
+  it("finds pen taps: pen down directly followed by pen up", () => {
+    const sim = simulate(compile([[{ x: 5, y: 5 }], [{ x: 10, y: 0 }, { x: 20, y: 0 }], [{ x: 30, y: 30 }]], DEFAULT_PARAMS, { header: false }));
+    const dots = [...dotsOf(sim).values()];
+    expect(dots).toHaveLength(2);
+    expect(dots[0].x).toBeCloseTo(5, 0);
+    expect(dots[1].y).toBeCloseTo(30, 0);
   });
 });

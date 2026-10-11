@@ -86,6 +86,11 @@ export function PaperView({ drawing, selected, selectedLabel }: { drawing?: Pape
             <span>
               <b>{drawing.strokes.length}</b> strokes
             </span>
+            {drawing.strokes.some((s) => s.length === 1) && (
+              <span>
+                <b>{drawing.strokes.filter((s) => s.length === 1).length}</b> dots
+              </span>
+            )}
             <span>time and speed in ② Plot</span>
           </>
         ) : null}

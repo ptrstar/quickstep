@@ -39,7 +39,20 @@ export function strokePaths(ctx: CanvasRenderingContext2D, strokes: Stroke[], s:
   ctx.lineCap = "round";
   ctx.beginPath();
   for (const st of strokes) {
+    if (st.length === 1) continue; // dots below
     st.forEach((p, i) => (i === 0 ? ctx.moveTo(ox + p.x * s, oy + p.y * s) : ctx.lineTo(ox + p.x * s, oy + p.y * s)));
   }
   ctx.stroke();
+  // a one-point stroke is a pen tap: draw it as a dot the width of the pen
+  ctx.fillStyle = color;
+  ctx.beginPath();
+  for (const st of strokes) {
+    if (st.length !== 1) continue;
+    const x = ox + st[0].x * s;
+    const y = oy + st[0].y * s;
+    const r = Math.max(0.6, lineWidth / 2);
+    ctx.moveTo(x + r, y);
+    ctx.arc(x, y, r, 0, 2 * Math.PI);
+  }
+  ctx.fill();
 }

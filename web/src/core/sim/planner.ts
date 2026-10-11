@@ -40,8 +40,9 @@ export function segment(dxMm: number, dyMm: number, penDown: boolean, params: Ma
  * Infinity when going straight on, 0 for a full reversal; capped by both nominal speeds.
  */
 export function junctionSpeed(a: Segment, b: Segment, deviation: number): number {
-  const cosTheta = -(a.ux * b.ux + a.uy * b.uy);
-  const s = Math.sqrt(Math.max(0, (1 - cosTheta) / 2));
+  // sin(θ/2) = |u1 + u2| / 2 for unit vectors. Same as sqrt((1 - cos θ) / 2), but without the
+  // cancellation that makes a float32 reversal come out slightly above zero (firmware).
+  const s = Math.min(1, Math.hypot(a.ux + b.ux, a.uy + b.uy) / 2);
   const accel = Math.min(a.accel, b.accel);
   const vj = 1 - s < 1e-9 ? Infinity : Math.sqrt((accel * deviation * s) / (1 - s));
   return Math.min(vj, a.nominal, b.nominal);

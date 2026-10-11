@@ -12,8 +12,9 @@ QuickStep is a lightweight, high-speed motion control system for an Arduino-base
 
 | Path | Contents |
 |------|----------|
+| `protocol` | QUICKSTEP v2 spec and shared test vectors |
+| `web` | Next.js frontend with simulator (`npm run dev`, `npm test`) |
+| `firmware` | PlatformIO firmware (`pio test -e native`, `pio run -e uno`) |
 | `legacy/pipenet` | v1 frontend (open `legacy/pipenet/index.html` served from the parent folder) |
 | `legacy/HSDriver` | v1 firmware (program baked into PROGMEM) |
 | `legacy/samples` | v1 programs, used as test fixtures |
-
-The new `protocol/`, `firmware/` and `web/` folders arrive stage by stage.

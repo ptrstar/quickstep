@@ -140,11 +140,11 @@ are in mm: `dx / steps_per_mm_x`, `dy / steps_per_mm_y`.
 
 **Junctions.** Between consecutive segments with directions `u1`, `u2`:
 
-    cos θ = −u1·u2                      (θ = angle between the two lines, π = straight on)
-    s     = sin(θ/2) = sqrt((1 − cos θ) / 2)
+    s     = sin(θ/2) = |u1 + u2| / 2    (θ = angle between the two lines, π = straight on)
     v_j   = sqrt(a · δ · s / (1 − s))   (a = min of both segments' a)
 
-`v_j` is capped by both segments' `v_nom`. Straight on (`s → 1`) means no junction limit, and a full reversal
+`|u1 + u2| / 2` equals `sqrt((1 + u1·u2) / 2)` but stays exact in float32 near a reversal. `v_j` is capped by
+both segments' `v_nom`. Straight on (`s → 1`) means no junction limit, and a full reversal
 (`s = 0`) means `v_j = 0`.
 
 **Lookahead.** The planner holds at most **20** segments. The last queued segment always ends at speed 0,

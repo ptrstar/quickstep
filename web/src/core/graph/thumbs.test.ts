@@ -25,8 +25,8 @@ describe("makeThumb", () => {
 describe("defaultPipeline", () => {
   it("is fully wired and only waits for an image", () => {
     const doc = defaultPipeline(registry);
-    expect(doc.nodes.map((n) => n.kind === "node" && n.type)).toEqual(["image", "grayscale", "contrast", "blur", "amplifyLine", "paper"]);
-    expect(doc.edges).toHaveLength(5);
+    expect(doc.nodes.map((n) => n.kind === "node" && n.type)).toEqual(["image", "grayscale", "contrast", "blur", "amplifyLine", "paper", "optimize"]);
+    expect(doc.edges).toHaveLength(6);
     const r = new Evaluator(registry).run(doc, { assets: new Map() });
     expect([...r.status.values()].every((s) => s.state === "waiting")).toBe(true);
     expect(r.status.get(doc.nodes[0].id)!.error).toBe("load an image");

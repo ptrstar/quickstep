@@ -99,7 +99,7 @@ export class Evaluator {
         try {
           const out = def.compute(inputs, node.params, ctx);
           const ms = now() - t0;
-          entry = { key, version: ++this.versions, outputs: out, status: { state: "ok", ms, fresh: true, summary: def.summary?.(out, node.params) } };
+          entry = { key, version: ++this.versions, outputs: out, status: { state: "ok", ms, fresh: true, summary: def.summary?.(out, node.params, inputs) } };
         } catch (e) {
           entry = {
             key,

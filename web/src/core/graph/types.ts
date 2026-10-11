@@ -57,8 +57,8 @@ export type NodeDef = {
    * (the engine does not call compute otherwise). Throw to report a problem with the inputs.
    */
   compute(inputs: Record<string, Value>, params: Params, ctx: ComputeContext): Record<string, Value>;
-  /** One line for the node card, from its outputs. */
-  summary?(outputs: Record<string, Value>, params: Params): string;
+  /** One line for the node card, from its outputs (and inputs, e.g. to show before → after). */
+  summary?(outputs: Record<string, Value>, params: Params, inputs: Record<string, Value>): string;
 };
 
 export type { Point, Stroke };

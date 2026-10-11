@@ -20,7 +20,7 @@ export function chain(registry: Registry, types: string[], params: Record<string
   return doc;
 }
 
-/** The starting pipeline: AmplifyLine portrait waves on A6. */
+/** The starting pipeline: AmplifyLine portrait waves on A6, optimized for plotting. */
 export function defaultPipeline(registry: Registry): GraphDoc {
-  return chain(registry, ["image", "grayscale", "contrast", "blur", "amplifyLine", "paper"]);
+  return chain(registry, ["image", "grayscale", "contrast", "blur", "amplifyLine", "paper", "optimize"]);
 }

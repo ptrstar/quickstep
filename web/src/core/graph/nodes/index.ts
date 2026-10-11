@@ -2,6 +2,7 @@ import type { Stroke } from "../../geometry";
 import type { Registry } from "../doc";
 import type { GrayImage, Lines, NodeDef, PaperDrawing, RgbaImage } from "../types";
 import { NeedsInput } from "../types";
+import { optimizeStrokes, travelLength } from "./optimize";
 import { boxBlur, contrast, downscale, grayscale, invert, sample } from "./pixels";
 
 const px = (img: { width: number; height: number }) => `${img.width} × ${img.height} px`;
@@ -180,6 +181,51 @@ const paper: NodeDef = {
   },
 };
 
-export const NODE_DEFS: NodeDef[] = [image, toGray, invertNode, contrastNode, blurNode, amplifyLine, paper];
+const points = (d: PaperDrawing) => d.strokes.reduce((n, s) => n + s.length, 0);
+
+const optimize: NodeDef = {
+  type: "optimize",
+  label: "Optimize",
+  description:
+    "Makes the drawing cheaper to plot: wiggles too small to see become straight lines (fewer moves, same look), strokes are ordered to cut pen-up travel, tiny strokes can be dropped and near gaps joined. Smoothing trades detail for speed.",
+  inputs: [{ name: "drawing", type: "drawing" }],
+  outputs: [{ name: "drawing", type: "drawing" }],
+  params: {
+    flatten: { kind: "number", label: "Flatten wiggles under", default: 0.05, min: 0, max: 1, step: 0.01, unit: "mm" },
+    minSpan: { kind: "number", label: "Only over at least", default: 1, min: 0.2, max: 10, step: 0.1, unit: "mm" },
+    smooth: { kind: "number", label: "Smooth (changes the look)", default: 0, min: 0, max: 10, step: 1, unit: "points" },
+    minLength: { kind: "number", label: "Drop strokes under", default: 0, min: 0, max: 10, step: 0.1, unit: "mm" },
+    order: {
+      kind: "select",
+      label: "Stroke order",
+      default: "nearest",
+      options: [
+        { value: "nearest", label: "shortest travel" },
+        { value: "keep", label: "as drawn" },
+      ],
+    },
+    join: { kind: "number", label: "Join gaps up to", default: 0, min: 0, max: 5, step: 0.1, unit: "mm" },
+  },
+  compute(inp, p) {
+    const d = inp.drawing as PaperDrawing;
+    const strokes = optimizeStrokes(d.strokes, {
+      flatten: p.flatten as number,
+      minSpan: p.minSpan as number,
+      smooth: p.smooth as number,
+      minLength: p.minLength as number,
+      order: p.order === "nearest",
+      join: p.join as number,
+    });
+    return { drawing: { paper: d.paper, strokes } satisfies PaperDrawing };
+  },
+  summary: (out, _, inp) => {
+    const a = inp.drawing as PaperDrawing;
+    const b = out.drawing as PaperDrawing;
+    const m = (v: number) => (v / 1000).toFixed(2);
+    return `${count(points(a))} → ${count(points(b))} pts · travel ${m(travelLength(a.strokes))} → ${m(travelLength(b.strokes))} m`;
+  },
+};
+
+export const NODE_DEFS: NodeDef[] = [image, toGray, invertNode, contrastNode, blurNode, amplifyLine, paper, optimize];
 
 export const registry: Registry = new Map(NODE_DEFS.map((d) => [d.type, d]));

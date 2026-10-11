@@ -17,13 +17,13 @@ describe("GraphSession", () => {
     const [img, , , blur] = doc.nodes.map((n) => n.id);
     const empty = s.run(doc);
     expect(empty.thumbs).toEqual([]);
-    expect(empty.cleared).toHaveLength(6);
+    expect(empty.cleared).toHaveLength(7);
     expect(empty.drawing).toBeUndefined();
 
     s.addAsset("a", image());
     doc = setParam(registry, doc, img, "asset", "a");
     const first = s.run(doc);
-    expect(first.thumbs).toHaveLength(6);
+    expect(first.thumbs).toHaveLength(7);
     expect(first.drawing?.paper).toEqual({ width: 105, height: 148 });
 
     const second = s.run(setParam(registry, doc, blur, "radius", 5));

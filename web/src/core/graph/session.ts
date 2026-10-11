@@ -12,7 +12,7 @@ export type SessionResult = {
   thumbs: [string, Thumb][];
   /** Flat ids that have no output any more, so the UI drops their thumbnails. */
   cleared: string[];
-  /** Output of the first paper node that has one: what will be plotted. */
+  /** What will be plotted: the end of the chain, a drawing that no other node takes. */
   drawing?: PaperDrawing;
   ms: number;
 };
@@ -45,7 +45,9 @@ export class GraphSession {
       if (!first) cleared.push(node.id);
       else if (result.status.get(node.id)?.fresh) thumbs.push([node.id, makeThumb(first)]);
     }
-    const paper = result.flat.nodes.find((n) => n.type === "paper" && result.outputs.get(n.id)?.drawing);
+    const drawings = result.flat.nodes.filter((n) => result.outputs.get(n.id)?.drawing);
+    const isSink = (id: string) => !result.flat.edges.some((e) => e.from.node === id);
+    const paper = drawings.find((n) => isSink(n.id)) ?? drawings[0];
     return {
       status: [...result.status.entries()],
       thumbs,

@@ -1,4 +1,4 @@
-import type { Point, Stroke } from "../../geometry";
+import type { Point } from "../../geometry";
 import type { GrayImage } from "../types";
 
 /** Small, fast, seedable random numbers (mulberry32), so the same settings give the same dots. */
@@ -147,15 +147,6 @@ export function stipple(g: GrayImage, o: StippleOptions): { points: Point[]; den
 
   const density = pts.map((p) => d[Math.min(h - 1, Math.floor(p.y)) * w + Math.min(w - 1, Math.floor(p.x))]);
   return { points: pts.map((p) => ({ x: p.x * grid.sx, y: p.y * grid.sy })), density };
-}
-
-/** A closed circle polyline around `c`, segments about `step` long. */
-export function circle(c: Point, r: number, step = 0.5): Stroke {
-  const n = Math.max(6, Math.ceil((2 * Math.PI * r) / step));
-  return Array.from({ length: n + 1 }, (_, k) => {
-    const a = (2 * Math.PI * k) / n;
-    return { x: c.x + r * Math.cos(a), y: c.y + r * Math.sin(a) };
-  });
 }
 
 const dist = (a: Point, b: Point) => Math.hypot(a.x - b.x, a.y - b.y);

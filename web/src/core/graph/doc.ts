@@ -46,6 +46,13 @@ export function newId(prefix = "n"): NodeId {
   return `${prefix}${Date.now().toString(36)}${counter.toString(36)}${Math.floor(Math.random() * 1296).toString(36)}`;
 }
 
+/** Whether a control applies with the current params (its `when` condition holds). */
+export function paramVisible(spec: ParamSpec, params: Params): boolean {
+  if (spec.kind !== "number" || !spec.when) return true;
+  const v = params[spec.when.param] as string;
+  return Array.isArray(spec.when.is) ? spec.when.is.includes(v) : v === spec.when.is;
+}
+
 /** Fills missing params with defaults, clamps numbers, drops unknown keys and wrong types. */
 export function normalizeParams(specs: Record<string, ParamSpec>, params: Params = {}): Params {
   const out: Params = {};

@@ -8,6 +8,7 @@ import {
   type ParamSpec,
   type ParamValue,
   type Params,
+  paramVisible,
   portsOf,
   type Registry,
   setParam,
@@ -203,7 +204,7 @@ function ParamControls({
   return (
     <>
       {Object.entries(def.params)
-        .filter(([key, spec]) => (!only || only.includes(key)) && !(spec.kind === "number" && spec.when && params[spec.when.param] !== spec.when.is))
+        .filter(([key, spec]) => (!only || only.includes(key)) && paramVisible(spec, params))
         .map(([key, spec]) => (
           <Control
             key={key}

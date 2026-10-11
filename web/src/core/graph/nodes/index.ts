@@ -5,7 +5,8 @@ import { NeedsInput } from "../types";
 import { canny, traceEdges } from "./edges";
 import { hatch } from "./hatching";
 import { distanceTransform, rasterize } from "./ink";
-import { circle, stipple, tour } from "./stipple";
+import { drawMarks } from "./marks";
+import { stipple, tour } from "./stipple";
 import { optimizeStrokes, smooth, strokeLength, travelLength } from "./optimize";
 import { PAPER_SIZES, paperSize } from "./paper";
 import { mergeNode, postcardNode, textNode } from "./text";
@@ -165,7 +166,9 @@ const paper: NodeDef = {
     const s = Math.min(aw / lines.width, ah / lines.height);
     const ox = m + (aw - lines.width * s) / 2;
     const oy = m + (ah - lines.height * s) / 2;
-    const strokes = lines.strokes.map((st) => st.map((q) => ({ x: ox + q.x * s, y: oy + q.y * s })));
+    const placed = lines.strokes.map((st) => st.map((q) => ({ x: ox + q.x * s, y: oy + q.y * s })));
+    // marks (e.g. stipple circles) are sized in mm, so they are drawn here, at the paper's scale
+    const strokes = lines.marks ? drawMarks(placed, lines.marks) : placed;
     return { drawing: { paper: sheet, strokes } satisfies PaperDrawing };
   },
   summary: (out) => {
@@ -324,7 +327,7 @@ const stippling: NodeDef = {
   type: "stipple",
   label: "Stippling",
   description:
-    "Dots placed by darkness and relaxed until evenly spaced within each tone, drawn as dots (radius 0) or circles of the given radius. Each mark costs a pen lift (about 0.3 s); 'one line' joins them into a single continuous stroke instead.",
+    "Dots placed by darkness and relaxed until evenly spaced within each tone. Drawn as dots, circles or polygons sized by darkness (in mm on the paper), or as one continuous line. Each mark costs a pen lift (about 0.3 s); one line needs none.",
   inputs: [{ name: "gray", type: "gray" }],
   outputs: [{ name: "lines", type: "lines" }],
   params: {
@@ -332,13 +335,18 @@ const stippling: NodeDef = {
     style: {
       kind: "select",
       label: "Draw as",
-      default: "marks",
+      default: "dots",
       options: [
-        { value: "marks", label: "dots or circles (see radius)" },
+        { value: "dots", label: "dots (pen taps)" },
+        { value: "circles", label: "circles" },
+        { value: "polygons", label: "polygons" },
         { value: "line", label: "one continuous line (TSP art)" },
       ],
     },
-    size: { kind: "number", label: "Circle radius", default: 0, min: 0, max: 10, step: 0.1, unit: "px (0 = dot)" },
+    corners: { kind: "number", label: "Corners", default: 6, min: 3, max: 12, step: 1, when: { param: "style", is: "polygons" } },
+    rotation: { kind: "number", label: "Rotation", default: 0, min: 0, max: 360, step: 1, unit: "°", when: { param: "style", is: "polygons" } },
+    maxRadius: { kind: "number", label: "Max radius", default: 0.8, min: 0.1, max: 10, step: 0.05, unit: "mm (darkest)", when: { param: "style", is: ["circles", "polygons"] } },
+    minRadius: { kind: "number", label: "Min radius", default: 0.2, min: 0, max: 10, step: 0.05, unit: "mm (lightest)", when: { param: "style", is: ["circles", "polygons"] } },
     iterations: { kind: "number", label: "Relaxation", default: 30, min: 0, max: 100, step: 1, unit: "rounds" },
     gamma: { kind: "number", label: "Tone contrast", default: 1.3, min: 0.3, max: 4, step: 0.05 },
     cutoff: { kind: "number", label: "Lightest stippled tone", default: 0.92, min: 0.05, max: 1, step: 0.01 },
@@ -346,23 +354,31 @@ const stippling: NodeDef = {
   },
   compute(inp, p) {
     const g = inp.gray as GrayImage;
-    const { points } = stipple(g, {
+    const { points, density } = stipple(g, {
       points: p.points as number,
       iterations: p.iterations as number,
       gamma: p.gamma as number,
       cutoff: p.cutoff as number,
       seed: p.seed as number,
     });
-    let strokes: Stroke[];
-    const r = p.size as number;
-    if (p.style === "line") strokes = points.length ? [tour(points)] : [];
-    else if (r > 0) strokes = points.map((c) => circle(c, r));
-    else strokes = points.map((c) => [c]);
-    return { lines: { width: g.width, height: g.height, strokes } satisfies Lines };
+    if (p.style === "line") return { lines: { width: g.width, height: g.height, strokes: points.length ? [tour(points)] : [] } satisfies Lines };
+    const strokes: Stroke[] = points.map((c) => [c]);
+    if (p.style === "dots") return { lines: { width: g.width, height: g.height, strokes } satisfies Lines };
+    // the Paper node draws the marks in mm; here: shape, radii and each dot's darkness (0…1)
+    const minRadius = Math.min(p.minRadius as number, p.maxRadius as number);
+    const marks = {
+      shape: p.style === "circles" ? ("circle" as const) : ("polygon" as const),
+      corners: p.corners as number,
+      rotation: p.rotation as number,
+      minRadius,
+      maxRadius: p.maxRadius as number,
+      sizes: density.map((v) => Math.pow(v, 1 / (p.gamma as number))),
+    };
+    return { lines: { width: g.width, height: g.height, strokes, marks } satisfies Lines };
   },
   summary: (out, p) => {
     const l = out.lines as Lines;
-    return p.style === "line" ? `one line · ${count(l.strokes[0]?.length ?? 0)} dots` : `${count(l.strokes.length)} ${(p.size as number) > 0 ? "circles" : "dots"}`;
+    return p.style === "line" ? `one line · ${count(l.strokes[0]?.length ?? 0)} dots` : `${count(l.strokes.length)} ${p.style}`;
   },
 };
 

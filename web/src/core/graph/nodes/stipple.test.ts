@@ -102,22 +102,22 @@ describe("Stippling node", () => {
     return registry.get("stipple")!.compute({ gray: g }, n.params, { assets: new Map() }).lines as Lines;
   };
 
-  it("radius 0 draws dots: single points", () => {
-    const l = run({ style: "marks", size: 0 });
+  it("dots are single points, without marks", () => {
+    const l = run({ style: "dots" });
     expect(l.strokes).toHaveLength(200);
     expect(l.strokes.every((s) => s.length === 1)).toBe(true);
+    expect(l.marks).toBeUndefined();
   });
 
-  it("a radius above 0 draws closed circles of exactly that radius", () => {
-    const l = run({ style: "marks", size: 2 });
-    expect(l.strokes).toHaveLength(200);
-    for (const s of l.strokes) {
-      expect(s[0].x).toBeCloseTo(s.at(-1)!.x);
-      expect(s[0].y).toBeCloseTo(s.at(-1)!.y);
-      const cx = s.slice(1).reduce((a, p) => a + p.x, 0) / (s.length - 1);
-      const cy = s.slice(1).reduce((a, p) => a + p.y, 0) / (s.length - 1);
-      for (const p of s) expect(Math.hypot(p.x - cx, p.y - cy)).toBeCloseTo(2, 6);
+  it("circles and polygons hand the Paper node marks sized by darkness", () => {
+    const l = run({ style: "polygons", corners: 3, maxRadius: 1.2, minRadius: 0.3 });
+    expect(l.marks).toMatchObject({ shape: "polygon", corners: 3, maxRadius: 1.2, minRadius: 0.3 });
+    expect(l.marks!.sizes).toHaveLength(l.strokes.length);
+    for (const v of l.marks!.sizes) {
+      expect(v).toBeGreaterThanOrEqual(0);
+      expect(v).toBeLessThanOrEqual(1);
     }
+    expect(run({ style: "circles" }).marks!.shape).toBe("circle");
   });
 
   it("one line goes through all dots", () => {

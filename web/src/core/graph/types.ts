@@ -10,8 +10,26 @@ export type RgbaImage = { width: number; height: number; data: Uint8ClampedArray
 /** One channel, 0 = black … 1 = white, row-major. */
 export type GrayImage = { width: number; height: number; data: Float32Array };
 
+/**
+ * Marks to draw around one-point strokes, sized in mm on paper. Image nodes cannot know millimetres
+ * (only the Paper node decides how big the picture becomes), so they describe the marks and the
+ * Paper node draws them at their true size.
+ */
+export type Marks = {
+  /** circle, or a regular polygon with `corners` corners */
+  shape: "circle" | "polygon";
+  corners: number;
+  /** degrees */
+  rotation: number;
+  /** mm */
+  minRadius: number;
+  maxRadius: number;
+  /** Per stroke, 0…1: where between min and max radius (strokes with more than one point ignore it). */
+  sizes: number[];
+};
+
 /** Pen paths in frame units (an image's pixels), inside a width × height frame. */
-export type Lines = { width: number; height: number; strokes: Stroke[] };
+export type Lines = { width: number; height: number; strokes: Stroke[]; marks?: Marks };
 
 /** Pen paths in mm on a sheet of paper; (0, 0) is the paper's top-left corner. */
 export type PaperDrawing = {
@@ -32,8 +50,8 @@ export type Value = DataValue[DataType];
 
 export type Port = { name: string; type: DataType };
 
-/** Show a control only while another select param has a given value. */
-export type ParamCondition = { param: string; is: string };
+/** Show a control only while another select param has one of the given values. */
+export type ParamCondition = { param: string; is: string | string[] };
 
 export type ParamSpec =
   | { kind: "number"; label: string; default: number; min: number; max: number; step: number; unit?: string; when?: ParamCondition }

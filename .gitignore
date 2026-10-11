@@ -1,2 +1,19 @@
+# OS
+.DS_Store
 
+# local agent notes (not versioned)
+CLAUDE.md
+
+# web
+node_modules/
+.next/
+out/
+*.tsbuildinfo
+coverage/
+
+# firmware
+.pio/
+firmware/build/
+
+# fonts are local only (licensing)
 assets/

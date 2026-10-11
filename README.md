@@ -1,18 +1,19 @@
 # QuickStep Plotter
 
-QuickStep is an extremely lightweight (both generated paths for A6 Postcards and arduino driver code < 32kB), high-speed motion control system for Arduino-based pen plotters. It includes:
+QuickStep is a lightweight, high-speed motion control system for an Arduino-based pen plotter:
 
-- **Image & Text to QuickStep Converter** – Transforms raster images and true type fonts into optimized QuickStep commands.
-- **QuickStep Motion Driver** – A minimal, efficient stepper control firmware designed for high-speed plotting.
+- **Frontend** – a node-graph editor that turns raster images and fonts into QuickStep programs, with a simulator.
+- **QuickStep format** – a compact, G-code-like binary command format (2-bit opcodes, variable int size relative moves).
+- **Firmware** – streams QuickStep over USB serial and runs it with lookahead path planning on an ATmega328P.
 
-## Features
-- Compressed G-code-like command format called Quickstep
-- Optimized stepper motion for speed and precision  
-- Custom toolpath generation for line-art and text  
+## Status
 
-## Getting Started
-1. Flash the QuickStep driver to your Arduino.  
-2. Convert images or text using the PipeNet front-end.  
-3. Send the generated commands to your plotter.  
+`v2` is a rewrite in progress:
 
-Work in progress.
+| Path | Contents |
+|------|----------|
+| `legacy/pipenet` | v1 frontend (open `legacy/pipenet/index.html` served from the parent folder) |
+| `legacy/HSDriver` | v1 firmware (program baked into PROGMEM) |
+| `legacy/samples` | v1 programs, used as test fixtures |
+
+The new `protocol/`, `firmware/` and `web/` folders arrive stage by stage.

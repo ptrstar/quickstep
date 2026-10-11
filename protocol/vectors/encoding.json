@@ -1,0 +1,231 @@
+[
+  {
+    "name": "end_only",
+    "description": "Smallest job. Remaining slots are padding.",
+    "instructions": [
+      {
+        "op": "end"
+      }
+    ],
+    "bytes": "03"
+  },
+  {
+    "name": "pen_down_up",
+    "description": "Two toggles then END.",
+    "instructions": [
+      {
+        "op": "pen"
+      },
+      {
+        "op": "pen"
+      },
+      {
+        "op": "end"
+      }
+    ],
+    "bytes": "30"
+  },
+  {
+    "name": "move_int8_default",
+    "description": "Default size is 8 bit. dx then dy.",
+    "instructions": [
+      {
+        "op": "move",
+        "dx": 1,
+        "dy": -1
+      },
+      {
+        "op": "end"
+      }
+    ],
+    "bytes": "0E 01 FF"
+  },
+  {
+    "name": "move_int4",
+    "description": "Low nibble dx, high nibble dy, including extremes.",
+    "instructions": [
+      {
+        "op": "size",
+        "bits": 4
+      },
+      {
+        "op": "move",
+        "dx": 3,
+        "dy": 1
+      },
+      {
+        "op": "move",
+        "dx": -8,
+        "dy": 7
+      },
+      {
+        "op": "end"
+      }
+    ],
+    "bytes": "A1 13 78 03"
+  },
+  {
+    "name": "move_int16",
+    "description": "Little-endian int16 components (same as v1 driver comment).",
+    "instructions": [
+      {
+        "op": "size",
+        "bits": 16
+      },
+      {
+        "op": "move",
+        "dx": -1,
+        "dy": 2
+      },
+      {
+        "op": "end"
+      }
+    ],
+    "bytes": "E9 FF FF 02 00"
+  },
+  {
+    "name": "size_arg_crosses_byte",
+    "description": "SIZE opcode is slot 3, its argument is the first slot of the next byte. Data of byte 0 comes before byte 1.",
+    "instructions": [
+      {
+        "op": "move",
+        "dx": 1,
+        "dy": 2
+      },
+      {
+        "op": "move",
+        "dx": 3,
+        "dy": 4
+      },
+      {
+        "op": "move",
+        "dx": 5,
+        "dy": 6
+      },
+      {
+        "op": "size",
+        "bits": 4
+      },
+      {
+        "op": "move",
+        "dx": 1,
+        "dy": 1
+      },
+      {
+        "op": "end"
+      }
+    ],
+    "bytes": "6A 01 02 03 04 05 06 38 11"
+  },
+  {
+    "name": "pause_resume",
+    "description": "RESUME's EXT slot pair spans two bytes, so its opcode byte follows the second opcode byte.",
+    "instructions": [
+      {
+        "op": "move",
+        "dx": 10,
+        "dy": 0
+      },
+      {
+        "op": "pause"
+      },
+      {
+        "op": "resume"
+      },
+      {
+        "op": "end"
+      }
+    ],
+    "bytes": "76 0A 00 01 0F 02"
+  },
+  {
+    "name": "set_param",
+    "description": "accel_x = 500.0 (f32 LE 0x43FA0000).",
+    "instructions": [
+      {
+        "op": "set_param",
+        "id": 20,
+        "value": 500.0
+      },
+      {
+        "op": "end"
+      }
+    ],
+    "bytes": "3D 03 14 00 00 FA 43"
+  },
+  {
+    "name": "dwell",
+    "description": "DWELL 250 ms (u16 LE).",
+    "instructions": [
+      {
+        "op": "dwell",
+        "ms": 250
+      },
+      {
+        "op": "end"
+      }
+    ],
+    "bytes": "3D 04 FA 00"
+  },
+  {
+    "name": "end_resets_size",
+    "description": "After END the size is back to 8 and a new opcode byte starts.",
+    "instructions": [
+      {
+        "op": "size",
+        "bits": 4
+      },
+      {
+        "op": "move",
+        "dx": 1,
+        "dy": 1
+      },
+      {
+        "op": "end"
+      },
+      {
+        "op": "move",
+        "dx": 1,
+        "dy": 1
+      },
+      {
+        "op": "end"
+      }
+    ],
+    "bytes": "E1 11 0E 01 01"
+  },
+  {
+    "name": "misc_ext",
+    "description": "NOP, MOTORS_OFF and RESET_PARAMS.",
+    "instructions": [
+      {
+        "op": "nop"
+      },
+      {
+        "op": "motors_off"
+      },
+      {
+        "op": "reset_params"
+      },
+      {
+        "op": "end"
+      }
+    ],
+    "bytes": "DD 00 05 3D 06"
+  },
+  {
+    "name": "zero_move",
+    "description": "MOVE(0,0) is legal and does nothing.",
+    "instructions": [
+      {
+        "op": "move",
+        "dx": 0,
+        "dy": 0
+      },
+      {
+        "op": "end"
+      }
+    ],
+    "bytes": "0E 00 00"
+  }
+]

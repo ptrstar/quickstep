@@ -1,0 +1,6 @@
+[
+  {"name": "unknown_ext_opcode", "bytes": "0D 07", "error": 129},
+  {"name": "unknown_param_id", "bytes": "0D 03 99 00 00 00 00", "error": 130},
+  {"name": "move_after_pause", "bytes": "2D 01 01 01", "error": 131},
+  {"name": "resume_without_pause", "bytes": "0D 02", "error": 131}
+]

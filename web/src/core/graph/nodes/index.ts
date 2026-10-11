@@ -2,7 +2,9 @@ import type { Stroke } from "../../geometry";
 import type { Registry } from "../doc";
 import type { GrayImage, Lines, NodeDef, PaperDrawing, RgbaImage } from "../types";
 import { NeedsInput } from "../types";
-import { optimizeStrokes, travelLength } from "./optimize";
+import { canny, traceEdges } from "./edges";
+import { hatch } from "./hatching";
+import { optimizeStrokes, smooth, strokeLength, travelLength } from "./optimize";
 import { PAPER_SIZES, paperSize } from "./paper";
 import { mergeNode, postcardNode, textNode } from "./text";
 
@@ -215,6 +217,65 @@ const optimize: NodeDef = {
   },
 };
 
+const linesSummary = (out: Record<string, unknown>) => {
+  const l = out.lines as Lines;
+  return `${count(l.strokes.length)} lines · ${count(l.strokes.reduce((n, s) => n + s.length, 0))} points`;
+};
+
+const edges: NodeDef = {
+  type: "edges",
+  label: "Edges",
+  description:
+    "Canny edge detection, traced into pen lines: blur, gradients, thinning to 1 px, then strong edges plus the weak edges connected to them. A higher threshold keeps only the strongest edges.",
+  inputs: [{ name: "gray", type: "gray" }],
+  outputs: [{ name: "lines", type: "lines" }],
+  params: {
+    sigma: { kind: "number", label: "Blur", default: 1.4, min: 0, max: 8, step: 0.1, unit: "px σ" },
+    high: { kind: "number", label: "Edge threshold", default: 0.85, min: 0.5, max: 0.995, step: 0.005, unit: "percentile" },
+    low: { kind: "number", label: "Keep weak edges", default: 0.4, min: 0.05, max: 1, step: 0.01, unit: "× threshold" },
+    minLength: { kind: "number", label: "Shortest line", default: 12, min: 0, max: 200, step: 1, unit: "px" },
+    smooth: { kind: "number", label: "Smooth", default: 2, min: 0, max: 10, step: 1, unit: "points" },
+  },
+  compute(inp, p) {
+    const g = inp.gray as GrayImage;
+    const mask = canny(g, { sigma: p.sigma as number, high: p.high as number, low: p.low as number });
+    const strokes = traceEdges(mask, g.width, g.height)
+      .filter((s) => strokeLength(s) >= (p.minLength as number))
+      .map((s) => smooth(s, p.smooth as number));
+    return { lines: { width: g.width, height: g.height, strokes } satisfies Lines };
+  },
+  summary: linesSummary,
+};
+
+const hatching: NodeDef = {
+  type: "hatching",
+  label: "Hatching",
+  description: "Tonal cross-hatching: each darker tone adds a layer of parallel lines in another direction.",
+  inputs: [{ name: "gray", type: "gray" }],
+  outputs: [{ name: "lines", type: "lines" }],
+  params: {
+    lines: { kind: "number", label: "Density", default: 90, min: 10, max: 400, step: 1, unit: "lines / height" },
+    layers: { kind: "number", label: "Layers", default: 3, min: 1, max: 6, step: 1 },
+    angle: { kind: "number", label: "Angle", default: 45, min: 0, max: 180, step: 1, unit: "°" },
+    angleStep: { kind: "number", label: "Turn per layer", default: 45, min: 0, max: 180, step: 1, unit: "°" },
+    cutoff: { kind: "number", label: "Lightest hatched tone", default: 0.85, min: 0.05, max: 1, step: 0.01 },
+    minLength: { kind: "number", label: "Shortest segment", default: 3, min: 0, max: 50, step: 0.5, unit: "px" },
+  },
+  compute(inp, p) {
+    const g = inp.gray as GrayImage;
+    const strokes = hatch(g, {
+      spacing: g.height / (p.lines as number),
+      layers: p.layers as number,
+      angle: p.angle as number,
+      angleStep: p.angleStep as number,
+      cutoff: p.cutoff as number,
+      minLength: p.minLength as number,
+    });
+    return { lines: { width: g.width, height: g.height, strokes } satisfies Lines };
+  },
+  summary: linesSummary,
+};
+
 /** The pipeline's single output: whatever drawing is wired into it gets plotted. */
 export const OUTPUT_TYPE = "output";
 const outputNode: NodeDef = {
@@ -228,6 +289,6 @@ const outputNode: NodeDef = {
   compute: () => ({}),
 };
 
-export const NODE_DEFS: NodeDef[] = [outputNode, image, toGray, invertNode, contrastNode, blurNode, amplifyLine, paper, textNode, postcardNode, mergeNode, optimize];
+export const NODE_DEFS: NodeDef[] = [outputNode, image, toGray, invertNode, contrastNode, blurNode, amplifyLine, edges, hatching, paper, textNode, postcardNode, mergeNode, optimize];
 
 export const registry: Registry = new Map(NODE_DEFS.map((d) => [d.type, d]));

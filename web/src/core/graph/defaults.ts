@@ -21,6 +21,16 @@ export function chain(registry: Registry, types: string[], params: Record<string
   return doc;
 }
 
+/** Edge detection traced into lines. */
+export function edgeSketch(registry: Registry): GraphDoc {
+  return ensureOutput(registry, chain(registry, ["image", "grayscale", "edges", "paper", "optimize"]));
+}
+
+/** Tonal cross-hatching. */
+export function crosshatch(registry: Registry): GraphDoc {
+  return ensureOutput(registry, chain(registry, ["image", "grayscale", "contrast", "blur", "hatching", "paper", "optimize"], { blur: { radius: 1 } }));
+}
+
 /** The starting pipeline: AmplifyLine portrait waves on A6, optimized for plotting. */
 export function defaultPipeline(registry: Registry): GraphDoc {
   return ensureOutput(registry, chain(registry, ["image", "grayscale", "contrast", "blur", "amplifyLine", "paper", "optimize"]));

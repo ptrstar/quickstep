@@ -1,14 +1,18 @@
 "use client";
 
 import { useEffect, useState } from "react";
-import { type Block, defaultPipeline, parseBlock, parsePreset, type Preset, registry, toPreset } from "@/core/graph";
+import { type Block, crosshatch, defaultPipeline, edgeSketch, parseBlock, parsePreset, type Preset, registry, toPreset } from "@/core/graph";
 
 const PRESETS_KEY = "quickstep.presets";
 const BLOCKS_KEY = "quickstep.blocks";
 
 /** Presets that always exist; saved ones with the same name override them. */
 export function builtInPresets(): Preset[] {
-  return [toPreset(registry, "Portrait waves", defaultPipeline(registry))];
+  return [
+    toPreset(registry, "Portrait waves", defaultPipeline(registry)),
+    toPreset(registry, "Edge sketch", edgeSketch(registry)),
+    toPreset(registry, "Crosshatch", crosshatch(registry)),
+  ];
 }
 
 function read<T>(key: string, parse: (json: unknown) => T): T[] {

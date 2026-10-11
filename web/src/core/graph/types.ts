@@ -1,0 +1,64 @@
+import type { Point, Stroke } from "../geometry";
+
+/** What flows along a wire. Ports only connect to ports of the same type. */
+export type DataType = "image" | "gray" | "lines" | "drawing";
+
+/** Colour pixels, RGBA 0…255, row-major. */
+export type RgbaImage = { width: number; height: number; data: Uint8ClampedArray };
+
+/** One channel, 0 = black … 1 = white, row-major. */
+export type GrayImage = { width: number; height: number; data: Float32Array };
+
+/** Pen paths in frame units (an image's pixels), inside a width × height frame. */
+export type Lines = { width: number; height: number; strokes: Stroke[] };
+
+/** Pen paths in mm on a sheet of paper; (0, 0) is the paper's top-left corner. */
+export type PaperDrawing = { paper: { width: number; height: number }; strokes: Stroke[] };
+
+export type DataValue = {
+  image: RgbaImage;
+  gray: GrayImage;
+  lines: Lines;
+  drawing: PaperDrawing;
+};
+
+export type Value = DataValue[DataType];
+
+export type Port = { name: string; type: DataType };
+
+export type ParamSpec =
+  | { kind: "number"; label: string; default: number; min: number; max: number; step: number; unit?: string }
+  | { kind: "select"; label: string; default: string; options: { value: string; label: string }[] }
+  | { kind: "boolean"; label: string; default: boolean }
+  | { kind: "text"; label: string; default: string; multiline?: boolean }
+  /** Reference to an image the user loaded. Not stored in presets' assets, only its key. */
+  | { kind: "asset"; label: string; default: string };
+
+export type ParamValue = number | string | boolean;
+export type Params = Record<string, ParamValue>;
+
+/** Images loaded by the user, by key. Kept outside the graph so presets stay small. */
+export type Assets = ReadonlyMap<string, RgbaImage>;
+
+export type ComputeContext = { assets: Assets };
+
+export type NodeDef = {
+  type: string;
+  label: string;
+  description: string;
+  inputs: Port[];
+  outputs: Port[];
+  params: Record<string, ParamSpec>;
+  /**
+   * Pure: same inputs and params give the same outputs. Inputs are present for every input port
+   * (the engine does not call compute otherwise). Throw to report a problem with the inputs.
+   */
+  compute(inputs: Record<string, Value>, params: Params, ctx: ComputeContext): Record<string, Value>;
+  /** One line for the node card, from its outputs. */
+  summary?(outputs: Record<string, Value>, params: Params): string;
+};
+
+export type { Point, Stroke };
+
+/** Thrown by compute when something is missing that the user still has to provide (e.g. an image). */
+export class NeedsInput extends Error {}

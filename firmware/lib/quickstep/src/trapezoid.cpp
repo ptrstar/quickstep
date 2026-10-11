@@ -29,4 +29,14 @@ Trapezoid trapezoid(real length, real accel, real entry, real exit, real nominal
   return t;
 }
 
+real distanceAt(const Trapezoid& p, real t) {
+  if (t <= 0) return 0;
+  if (t < p.accelTime) return p.entry * t + p.accel * t * t / 2;
+  t -= p.accelTime;
+  if (t < p.cruiseTime) return p.accelDist + p.peak * t;
+  t -= p.cruiseTime;
+  if (t < p.decelTime) return p.accelDist + p.cruiseDist + p.peak * t - p.accel * t * t / 2;
+  return p.length;
+}
+
 }  // namespace qs

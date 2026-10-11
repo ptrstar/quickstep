@@ -22,4 +22,7 @@ struct Trapezoid {
 
 Trapezoid trapezoid(real length, real accel, real entry, real exit, real nominal);
 
+// Distance travelled `t` seconds into the profile, clamped to [0, length].
+real distanceAt(const Trapezoid& p, real t);
+
 }  // namespace qs

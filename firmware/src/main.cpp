@@ -1,39 +1,62 @@
-// PLACEHOLDER until Stage 5. It wires the core to Serial so the build shows realistic flash/RAM
-// usage, but does not drive motors yet: the step ISR, our own RX ring buffer and flow control
-// replace this file.
+// QuickStep firmware main loop (SPEC §5, §7).
+//
+//   serial RX ISR → ring buffer → decoder → machine (lookahead planner) → slicer → slice queue
+//   → Timer1 step ISR
+//
+// The main loop only ever does the float work (planning, slicing); both ISRs are integer-only.
 #include <Arduino.h>
 
 #include "decoder.h"
 #include "machine.h"
+#include "slicer.h"
+#include "stepper.h"
+#include "uart.h"
 
-struct SerialSource : qs::ByteSource {
-  int read() override { return Serial.read(); }
-};
+namespace {
+uart::Source input;
+qs::Decoder decoder;
+qs::Machine machine;
+qs::Slicer slicer;
+bool failed = false;
 
-static SerialSource input;
-static qs::Decoder decoder;
-static qs::Machine machine;
+// SPEC §5: stop motion, report once, ignore everything until reset.
+void fail(uint8_t code) {
+  stepper::stop();
+  uart::write(code);
+  failed = true;
+}
+}  // namespace
 
 void setup() {
-  Serial.begin(250000);
-  const uint8_t hello[] = {0xA5, 0x02, 0x04};  // SPEC §5: version 2, 64 byte buffer for now
-  Serial.write(hello, sizeof hello);
+  stepper::init();
+  uart::init();
+  uart::write(0xA5);  // hello: protocol version, buffer size / 16
+  uart::write(0x02);
+  uart::write(uart::RX_SIZE / 16);
 }
 
 void loop() {
+  if (failed) return;
+  if (uart::overrun()) return fail(qs::ERR_RX_OVERRUN);
+
+  // Decode while the planner has room.
   qs::Instruction ins;
   while (machine.canAccept()) {
     qs::Decoder::Status s = decoder.next(input, ins);
-    if (s == qs::Decoder::Failed) {
-      Serial.write(decoder.error());
-      for (;;) {
-      }
-    }
+    if (s == qs::Decoder::Failed) return fail(decoder.error());
     if (s != qs::Decoder::Ready) break;
     machine.accept(ins);
   }
+
+  // Normally a segment is frozen only once the full lookahead is queued. If no more bytes are
+  // coming and the motion is about to run dry, let the queued segments go anyway.
+  qs::SliceQueue& slices = stepper::queue();
+  bool starved = uart::empty() && slices.size() < 2;
   qs::Action action;
-  while (machine.poll(action, Serial.available() == 0)) {
-    // Stage 5: hand the action to the step generator.
-  }
+  if (!slicer.busy() && machine.poll(action, starved)) slicer.begin(action, machine.params());
+
+  qs::Slice slice;
+  while (!slices.full() && slicer.next(slice)) slices.push(slice);
+
+  uart::service();
 }

@@ -82,7 +82,9 @@ with END.
 
 - 250000 baud, 8N1 (exact on a 16 MHz ATmega328P with U2X).
 - Opening the port resets the Uno. After booting, the firmware sends `0xA5 0x02 n`. `0x02` is the
-  protocol version and `n` is the receive buffer size in units of 16 bytes. The host must wait for this.
+  protocol version and `n` is the receive buffer size in units of 16 bytes (currently 15: 240 bytes).
+  The host must wait for this. These are the first three bytes after a reset; every later byte is a
+  credit or an error.
 - **Flow control (device → host).** The host may have at most `16·n` bytes outstanding. Whenever the
   firmware has taken bytes out of its receive buffer, it sends one byte `k` (1…127) meaning
   "`k` more bytes are free". Reports are batched, so typically one byte per 32 bytes consumed.

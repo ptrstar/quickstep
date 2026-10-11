@@ -5,6 +5,7 @@ import { NeedsInput } from "../types";
 import { canny, traceEdges } from "./edges";
 import { hatch } from "./hatching";
 import { distanceTransform, rasterize } from "./ink";
+import { circle, stipple, tour } from "./stipple";
 import { optimizeStrokes, smooth, strokeLength, travelLength } from "./optimize";
 import { PAPER_SIZES, paperSize } from "./paper";
 import { mergeNode, postcardNode, textNode } from "./text";
@@ -315,6 +316,56 @@ const ink: NodeDef = {
   summary: linesSummary,
 };
 
+/**
+ * Weighted Voronoi stippling (Secord 2002), drawn as dots, circles sized by darkness, or one
+ * continuous line through all dots (TSP art, Kaplan & Bosch 2005), which needs no pen lifts.
+ */
+const stippling: NodeDef = {
+  type: "stipple",
+  label: "Stippling",
+  description:
+    "Dots placed by darkness and relaxed until evenly spaced within each tone. Dots cost a pen lift each (about 0.3 s); 'one line' joins them into a single continuous stroke instead.",
+  inputs: [{ name: "gray", type: "gray" }],
+  outputs: [{ name: "lines", type: "lines" }],
+  params: {
+    points: { kind: "number", label: "Dots", default: 2500, min: 50, max: 20000, step: 50 },
+    style: {
+      kind: "select",
+      label: "Draw as",
+      default: "dots",
+      options: [
+        { value: "dots", label: "dots (pen taps)" },
+        { value: "circles", label: "circles, sized by darkness" },
+        { value: "line", label: "one continuous line (TSP art)" },
+      ],
+    },
+    size: { kind: "number", label: "Largest circle", default: 1.5, min: 0.3, max: 10, step: 0.1, unit: "px radius" },
+    iterations: { kind: "number", label: "Relaxation", default: 30, min: 0, max: 100, step: 1, unit: "rounds" },
+    gamma: { kind: "number", label: "Tone contrast", default: 1.3, min: 0.3, max: 4, step: 0.05 },
+    cutoff: { kind: "number", label: "Lightest stippled tone", default: 0.92, min: 0.05, max: 1, step: 0.01 },
+    seed: { kind: "number", label: "Random seed", default: 1, min: 1, max: 9999, step: 1 },
+  },
+  compute(inp, p) {
+    const g = inp.gray as GrayImage;
+    const { points, density } = stipple(g, {
+      points: p.points as number,
+      iterations: p.iterations as number,
+      gamma: p.gamma as number,
+      cutoff: p.cutoff as number,
+      seed: p.seed as number,
+    });
+    let strokes: Stroke[];
+    if (p.style === "line") strokes = points.length ? [tour(points)] : [];
+    else if (p.style === "circles") strokes = points.map((c, i) => circle(c, Math.max(0.15, (p.size as number) * Math.sqrt(density[i]))));
+    else strokes = points.map((c) => [c]);
+    return { lines: { width: g.width, height: g.height, strokes } satisfies Lines };
+  },
+  summary: (out, p) => {
+    const l = out.lines as Lines;
+    return p.style === "line" ? `one line · ${count(l.strokes[0]?.length ?? 0)} dots` : `${count(l.strokes.length)} ${p.style}`;
+  },
+};
+
 /** The pipeline's single output: whatever drawing is wired into it gets plotted. */
 export const OUTPUT_TYPE = "output";
 const outputNode: NodeDef = {
@@ -328,6 +379,6 @@ const outputNode: NodeDef = {
   compute: () => ({}),
 };
 
-export const NODE_DEFS: NodeDef[] = [outputNode, image, toGray, invertNode, contrastNode, blurNode, amplifyLine, edges, hatching, ink, paper, textNode, postcardNode, mergeNode, optimize];
+export const NODE_DEFS: NodeDef[] = [outputNode, image, toGray, invertNode, contrastNode, blurNode, amplifyLine, edges, hatching, ink, stippling, paper, textNode, postcardNode, mergeNode, optimize];
 
 export const registry: Registry = new Map(NODE_DEFS.map((d) => [d.type, d]));

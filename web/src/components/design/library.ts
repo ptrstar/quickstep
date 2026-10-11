@@ -1,7 +1,7 @@
 "use client";
 
 import { useEffect, useState } from "react";
-import { type Block, crosshatch, defaultPipeline, edgeSketch, inkDrawing, parseBlock, parsePreset, type Preset, registry, toPreset } from "@/core/graph";
+import { type Block, crosshatch, defaultPipeline, edgeSketch, inkDrawing, stippling, parseBlock, parsePreset, type Preset, registry, toPreset } from "@/core/graph";
 
 const PRESETS_KEY = "quickstep.presets";
 const BLOCKS_KEY = "quickstep.blocks";
@@ -13,6 +13,7 @@ export function builtInPresets(): Preset[] {
     toPreset(registry, "Edge sketch", edgeSketch(registry)),
     toPreset(registry, "Crosshatch", crosshatch(registry)),
     toPreset(registry, "Ink drawing", inkDrawing(registry)),
+    toPreset(registry, "Stippling", stippling(registry)),
   ];
 }
 

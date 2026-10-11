@@ -51,6 +51,11 @@ export function inkDrawing(registry: Registry): GraphDoc {
   return ensureOutput(registry, doc);
 }
 
+/** Weighted Voronoi stippling. */
+export function stippling(registry: Registry): GraphDoc {
+  return ensureOutput(registry, chain(registry, ["image", "grayscale", "contrast", "stipple", "paper", "optimize"]));
+}
+
 /** The starting pipeline: AmplifyLine portrait waves on A6, optimized for plotting. */
 export function defaultPipeline(registry: Registry): GraphDoc {
   return ensureOutput(registry, chain(registry, ["image", "grayscale", "contrast", "blur", "amplifyLine", "paper", "optimize"]));

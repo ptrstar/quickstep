@@ -56,6 +56,22 @@ export function stippling(registry: Registry): GraphDoc {
   return ensureOutput(registry, chain(registry, ["image", "grayscale", "contrast", "stipple", "paper", "optimize"]));
 }
 
+/** Generative designs: a source straight onto the paper. */
+export function generative(registry: Registry, source: string, params: Record<string, string | number> = {}): GraphDoc {
+  return ensureOutput(registry, chain(registry, [source, "paper", "optimize"], { [source]: params }));
+}
+
+/** A spirograph turned into a shrinking, rotating tunnel. */
+export function rosette(registry: Registry): GraphDoc {
+  return ensureOutput(
+    registry,
+    chain(registry, ["spirograph", "repeat", "paper", "optimize"], {
+      spirograph: { ring: 60, wheel: 25, pen: 1.1 },
+      repeat: { copies: 10, rotate: 6, scale: 0.92 },
+    }),
+  );
+}
+
 /** The starting pipeline: AmplifyLine portrait waves on A6, optimized for plotting. */
 export function defaultPipeline(registry: Registry): GraphDoc {
   return ensureOutput(registry, chain(registry, ["image", "grayscale", "contrast", "blur", "amplifyLine", "paper", "optimize"]));

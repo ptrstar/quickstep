@@ -5,6 +5,7 @@ import { NeedsInput } from "../types";
 import { canny, traceEdges } from "./edges";
 import { hatch } from "./hatching";
 import { distanceTransform, rasterize } from "./ink";
+import { framed, harmonograph, repeat, spirograph, waveSpiral, whirl } from "./generative";
 import { drawMarks } from "./marks";
 import { stipple, tour } from "./stipple";
 import { optimizeStrokes, smooth, strokeLength, travelLength } from "./optimize";
@@ -382,6 +383,125 @@ const stippling: NodeDef = {
   },
 };
 
+// ---- generative designs: sources with no input; Paper sizes them to the sheet ----
+
+const pointsSummary = (out: Record<string, unknown>) => {
+  const l = out.lines as Lines;
+  return `${count(l.strokes.length)} ${l.strokes.length === 1 ? "line" : "lines"} · ${count(l.strokes.reduce((n, s) => n + s.length, 0))} points`;
+};
+
+const spirographNode: NodeDef = {
+  type: "spirograph",
+  label: "Spirograph",
+  description:
+    "A wheel with a pen hole rolling inside or outside a ring. The curve closes after wheel ÷ gcd(ring, wheel) trips; numbers without common factors give the densest figures.",
+  inputs: [],
+  outputs: [{ name: "lines", type: "lines" }],
+  params: {
+    ring: { kind: "number", label: "Ring teeth", default: 96, min: 10, max: 300, step: 1 },
+    wheel: { kind: "number", label: "Wheel teeth", default: 52, min: 2, max: 299, step: 1 },
+    pen: { kind: "number", label: "Pen hole", default: 0.8, min: 0, max: 1.5, step: 0.01, unit: "× wheel radius" },
+    mode: {
+      kind: "select",
+      label: "Wheel rolls",
+      default: "inside",
+      options: [
+        { value: "inside", label: "inside the ring" },
+        { value: "outside", label: "outside the ring" },
+      ],
+    },
+    resolution: { kind: "number", label: "Points per trip", default: 240, min: 30, max: 2000, step: 10 },
+  },
+  compute: (_, p) => ({
+    lines: framed([spirograph({ ring: p.ring as number, wheel: p.wheel as number, pen: p.pen as number, outside: p.mode === "outside", resolution: p.resolution as number })]),
+  }),
+  summary: pointsSummary,
+};
+
+const harmonographNode: NodeDef = {
+  type: "harmonograph",
+  label: "Harmonograph",
+  description:
+    "Two damped pendulums per axis. Frequencies just off whole-number ratios (3 vs 2.003) make the figure drift and fill in; damping makes it spiral inwards.",
+  inputs: [],
+  outputs: [{ name: "lines", type: "lines" }],
+  params: {
+    fx1: { kind: "number", label: "X pendulum 1", default: 2, min: 0.5, max: 10, step: 0.001, unit: "Hz" },
+    fx2: { kind: "number", label: "X pendulum 2", default: 3.003, min: 0.5, max: 10, step: 0.001, unit: "Hz" },
+    fy1: { kind: "number", label: "Y pendulum 1", default: 3, min: 0.5, max: 10, step: 0.001, unit: "Hz" },
+    fy2: { kind: "number", label: "Y pendulum 2", default: 2.002, min: 0.5, max: 10, step: 0.001, unit: "Hz" },
+    phase: { kind: "number", label: "Phase", default: 1.2, min: 0, max: 6.28, step: 0.01, unit: "rad" },
+    damping: { kind: "number", label: "Damping", default: 0.004, min: 0, max: 0.05, step: 0.0005 },
+    duration: { kind: "number", label: "Swing time", default: 280, min: 10, max: 2000, step: 10 },
+    resolution: { kind: "number", label: "Points per unit", default: 30, min: 5, max: 200, step: 1 },
+  },
+  compute: (_, p) => ({
+    lines: framed([
+      harmonograph({
+        fx1: p.fx1 as number,
+        fx2: p.fx2 as number,
+        fy1: p.fy1 as number,
+        fy2: p.fy2 as number,
+        phase: p.phase as number,
+        damping: p.damping as number,
+        duration: p.duration as number,
+        resolution: p.resolution as number,
+      }),
+    ]),
+  }),
+  summary: pointsSummary,
+};
+
+const waveSpiralNode: NodeDef = {
+  type: "waveSpiral",
+  label: "Wave spiral",
+  description: "One continuous spiral whose radius wobbles with waves; the waves drift a little each turn and line up into petals.",
+  inputs: [],
+  outputs: [{ name: "lines", type: "lines" }],
+  params: {
+    turns: { kind: "number", label: "Turns", default: 30, min: 2, max: 200, step: 1 },
+    waves: { kind: "number", label: "Waves per turn", default: 7, min: 0, max: 60, step: 0.5 },
+    amplitude: { kind: "number", label: "Wave height", default: 0.35, min: 0, max: 2, step: 0.01, unit: "× spacing" },
+    twist: { kind: "number", label: "Twist", default: 0.1, min: -1, max: 1, step: 0.01, unit: "waves per turn" },
+    resolution: { kind: "number", label: "Points per turn", default: 360, min: 30, max: 3000, step: 10 },
+  },
+  compute: (_, p) => ({
+    lines: framed([waveSpiral({ turns: p.turns as number, waves: p.waves as number, amplitude: p.amplitude as number, twist: p.twist as number, resolution: p.resolution as number })]),
+  }),
+  summary: pointsSummary,
+};
+
+const whirlNode: NodeDef = {
+  type: "whirl",
+  label: "Whirl",
+  description: "Nested polygons, each one's corners a small step along the previous edges. Only straight lines, yet spirals appear.",
+  inputs: [],
+  outputs: [{ name: "lines", type: "lines" }],
+  params: {
+    corners: { kind: "number", label: "Corners", default: 4, min: 3, max: 12, step: 1 },
+    levels: { kind: "number", label: "Levels", default: 40, min: 1, max: 300, step: 1 },
+    step: { kind: "number", label: "Step along edge", default: 0.08, min: 0.005, max: 0.5, step: 0.005 },
+    rotation: { kind: "number", label: "Rotation", default: 0, min: 0, max: 360, step: 1, unit: "°" },
+  },
+  compute: (_, p) => ({ lines: framed(whirl({ corners: p.corners as number, levels: p.levels as number, step: p.step as number, rotation: p.rotation as number })) }),
+  summary: pointsSummary,
+};
+
+const repeatNode: NodeDef = {
+  type: "repeat",
+  label: "Repeat",
+  description: "Copies of any lines around their centre, each turned and scaled from the previous: rosettes, tunnels, moiré.",
+  inputs: [{ name: "lines", type: "lines" }],
+  outputs: [{ name: "lines", type: "lines" }],
+  params: {
+    copies: { kind: "number", label: "Copies", default: 12, min: 1, max: 200, step: 1 },
+    rotate: { kind: "number", label: "Turn per copy", default: 30, min: -180, max: 180, step: 0.5, unit: "°" },
+    scale: { kind: "number", label: "Scale per copy", default: 1, min: 0.5, max: 1.5, step: 0.005, unit: "×" },
+  },
+  compute: (inp, p) => ({ lines: repeat(inp.lines as Lines, { copies: p.copies as number, rotate: p.rotate as number, scale: p.scale as number }) }),
+  summary: pointsSummary,
+};
+
 /** The pipeline's single output: whatever drawing is wired into it gets plotted. */
 export const OUTPUT_TYPE = "output";
 const outputNode: NodeDef = {
@@ -395,6 +515,6 @@ const outputNode: NodeDef = {
   compute: () => ({}),
 };
 
-export const NODE_DEFS: NodeDef[] = [outputNode, image, toGray, invertNode, contrastNode, blurNode, amplifyLine, edges, hatching, ink, stippling, paper, textNode, postcardNode, mergeNode, optimize];
+export const NODE_DEFS: NodeDef[] = [outputNode, image, toGray, invertNode, contrastNode, blurNode, amplifyLine, edges, hatching, ink, stippling, spirographNode, harmonographNode, waveSpiralNode, whirlNode, repeatNode, paper, textNode, postcardNode, mergeNode, optimize];
 
 export const registry: Registry = new Map(NODE_DEFS.map((d) => [d.type, d]));

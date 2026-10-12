@@ -33,7 +33,18 @@ async function readProgram(file: File): Promise<Uint8Array> {
  * ② Plot: review the job (estimate, speed, simulation), set up the paper, then simulate or plot.
  * While plotting, the view follows the plotter and the job controls take over.
  */
-export function PlotScreen({ plotter, drawing, onBackToDesign }: { plotter: Plotter; drawing?: PaperDrawing; onBackToDesign: () => void }) {
+export function PlotScreen({
+  plotter,
+  drawing,
+  name,
+  onBackToDesign,
+}: {
+  plotter: Plotter;
+  drawing?: PaperDrawing;
+  /** Project name, for the downloaded file. */
+  name: string;
+  onBackToDesign: () => void;
+}) {
   const machine = useMachineParams();
   const params = machine.params;
   const [source, setSourceState] = useState<Source>({ kind: "pipeline" });
@@ -102,7 +113,7 @@ export function PlotScreen({ plotter, drawing, onBackToDesign }: { plotter: Plot
       </div>
 
       <aside className={styles.side}>
-        <EstimateCard stats={summary} job={shown.job} liveTime={liveTime} running={running} />
+        <EstimateCard stats={summary} job={shown.job} liveTime={liveTime} running={running} name={source.kind === "pipeline" ? name : source.kind === "demo" ? source.name : source.kind === "file" ? source.name.replace(/\.\w+$/, "") : "calibration"} />
         <JobCard
           plotter={plotter}
           params={params}

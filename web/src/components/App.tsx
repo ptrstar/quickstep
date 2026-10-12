@@ -135,7 +135,7 @@ export function App() {
           onMessage={setMessage}
         />
       ) : (
-        <PlotScreen plotter={plotter} drawing={engine.drawing} onBackToDesign={() => setStep("design")} />
+        <PlotScreen plotter={plotter} drawing={engine.drawing} name={project.name} onBackToDesign={() => setStep("design")} />
       )}
 
       {message && (

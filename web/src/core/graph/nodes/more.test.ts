@@ -7,7 +7,7 @@ import type { GrayImage, PaperDrawing } from "../types";
 import { registry } from ".";
 import { repeat } from "./generative";
 import { BLEND_MODES, combine, crop, gradient, levels, orient, posterize, sharpen, threshold } from "./grayops";
-import { labelOutline, snowflake } from "./labels";
+import { labelOutline, outlineDistance, placeLabels, snowflake } from "./labels";
 import { shapeStrokes, transformStrokes } from "./shapes";
 
 const flat = (w: number, h: number, v: number): GrayImage => ({ width: w, height: h, data: new Float32Array(w * h).fill(v) });
@@ -135,46 +135,57 @@ describe("Cookie labels", () => {
     return registry.get("cookieLabels")!.compute({}, n.params, { assets: new Map(), fonts: new Map([["ems-readability", font]]) }).drawing as PaperDrawing;
   };
 
-  it("the outline is a rectangle with the top-left corner cut diagonally", () => {
-    expect(labelOutline(70, 32, 10)).toEqual([
+  it("both left corners are cut: a trapezoid end, or a triangle at half the height; mirrored points right", () => {
+    expect(labelOutline(60, 28, 10)).toEqual([
       { x: 10, y: 0 },
-      { x: 70, y: 0 },
-      { x: 70, y: 32 },
-      { x: 0, y: 32 },
+      { x: 60, y: 0 },
+      { x: 60, y: 28 },
+      { x: 10, y: 28 },
+      { x: 0, y: 18 },
       { x: 0, y: 10 },
       { x: 10, y: 0 },
     ]);
+    const tri = labelOutline(60, 28, 14);
+    expect(tri).toHaveLength(6);
+    expect(tri[4]).toEqual({ x: 0, y: 14 });
+    expect(labelOutline(60, 28, 14, true)[4]).toEqual({ x: 60, y: 14 });
   });
 
-  it("places one label per name inside the sheet, each with its own snowflake", () => {
-    const d = run({ names: "Anna\nBen\nClara\nDavid" });
-    expect(d.paper).toEqual({ width: 105, height: 148 });
+  it("nested pairs interlock: no two labels closer than the gap, yet a pair is narrower than two labels", () => {
+    const o = { width: 50, height: 28, chamfer: 14, gap: 3, margin: 4, layout: "nested" as const };
+    const spots = placeLabels(o, { width: 210, height: 297 });
+    const outlines = spots.map((s) => labelOutline(50, 28, 14, s.mirrored).map((p) => ({ x: p.x + s.x, y: p.y + s.y })));
+    for (let i = 0; i < outlines.length; i++) for (let j = i + 1; j < outlines.length; j++) expect(outlineDistance(outlines[i], outlines[j])).toBeGreaterThanOrEqual(3 - 1e-3);
+    const right = spots.find((s) => !s.mirrored)!;
+    const left = spots.find((s) => s.mirrored)!;
+    expect(right.x + 50 - left.x).toBeLessThan(2 * 50 + 3 - 5); // the points slide well into each other
+    for (const s of spots) {
+      expect(s.x).toBeGreaterThanOrEqual(4 - 1e-9);
+      expect(s.x + 50).toBeLessThanOrEqual(206 + 1e-9);
+      expect(s.y + 28).toBeLessThanOrEqual(293 + 1e-9);
+    }
+    const grid = placeLabels({ ...o, layout: "grid" }, { width: 210, height: 297 });
+    expect(grid.every((s) => !s.mirrored)).toBe(true);
+    for (const sheet of [{ width: 210, height: 297 }, { width: 297, height: 210 }]) {
+      const best = placeLabels({ ...o, layout: "best" }, sheet).length;
+      expect(best).toBe(Math.max(placeLabels({ ...o, layout: "grid" }, sheet).length, placeLabels(o, sheet).length));
+    }
+  });
+
+  it("places one label per name inside the sheet, says when names do not fit", () => {
+    const d = run({ names: "Anna\nBen" });
     for (const p of d.strokes.flat()) {
       expect(p.x).toBeGreaterThanOrEqual(0);
       expect(p.x).toBeLessThanOrEqual(105);
       expect(p.y).toBeLessThanOrEqual(148);
     }
-    const outlines = d.strokes.filter((s) => s.length === 6 && s[0].x === s[5].x && s[0].y === s[5].y);
-    expect(outlines).toHaveLength(4);
     expect(d.notes).toEqual([]);
-    // the snowflakes differ: compare the strokes right of each label's middle, relative to the label
-    const flakeOf = (i: number) => {
-      const o = outlines[i];
-      const x0 = Math.min(...o.map((p) => p.x));
-      const y0 = Math.min(...o.map((p) => p.y));
-      return JSON.stringify(
-        d.strokes
-          .filter((s) => s.every((p) => p.x > x0 + 45 && p.x < x0 + 70 && p.y > y0 && p.y < y0 + 32) && s.length <= 7)
-          .map((s) => s.map((p) => [+(p.x - x0).toFixed(2), +(p.y - y0).toFixed(2)])),
-      );
-    };
-    expect(new Set([0, 1, 2, 3].map(flakeOf)).size).toBe(4);
+    const many = run({ names: Array.from({ length: 30 }, (_, i) => `N${i}`).join("\n") });
+    expect(many.notes?.[0]).toMatch(/of 30 names do not fit/);
   });
 
-  it("says when names do not fit, and the name shrinks to fit its space", () => {
-    const d = run({ names: "A\nB\nC\nD\nE\nF" });
-    expect(d.notes).toEqual(["2 of 6 names do not fit on this sheet (4 labels)"]);
-    const long = run({ names: "Maximilian Alexander", snowflake: false, hole: false });
-    for (const p of long.strokes.flat()) expect(p.x).toBeLessThanOrEqual(4 + 70);
+  it("a long name shrinks to stay inside its label", () => {
+    const d = run({ names: "Maximilian Alexander von Hohenberg", layout: "grid" });
+    for (const p of d.strokes.flat()) expect(p.x).toBeLessThanOrEqual(4 + 60 + 1e-6);
   });
 });

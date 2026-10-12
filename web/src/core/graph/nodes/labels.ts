@@ -87,50 +87,46 @@ const fontOf = (ctx: ComputeContext, key: unknown): Font => {
 export type LabelOptions = {
   width: number;
   height: number;
-  /** Size of the cut-off corner (top left), mm. */
+  /** How far both left corners are cut back (mm); half the height makes a triangle point. */
   chamfer: number;
   hole: boolean;
   holeRadius: number;
-  snowflake: boolean;
-  flakeSize: number;
   textSize: number;
-  seed: number;
   outline: boolean;
 };
 
-/** Outline of one label at (0, 0): a rectangle with its top-left corner cut off diagonally. */
-export function labelOutline(w: number, h: number, c: number): Stroke {
-  const k = Math.max(0, Math.min(c, w / 2, h / 2));
-  return [
+/**
+ * Outline of one label at (0, 0), its pointed end on the left (or on the right when mirrored):
+ * both corners at that end cut off at 45°, a trapezoid, or a triangle at chamfer = height / 2.
+ */
+export function labelOutline(w: number, h: number, c: number, mirrored = false): Stroke {
+  const k = Math.max(0, Math.min(c, h / 2, w));
+  const pts: Point[] = [
     { x: k, y: 0 },
     { x: w, y: 0 },
     { x: w, y: h },
-    { x: 0, y: h },
-    { x: 0, y: k },
+    { x: k, y: h },
+    { x: 0, y: h - k },
+    ...(h - k > k ? [{ x: 0, y: k }] : []),
     { x: k, y: 0 },
   ];
+  return mirrored ? pts.map((p) => ({ x: w - p.x, y: p.y })) : pts;
 }
 
-/** One label: outline, string hole at the cut corner, the name, and its own snowflake. */
-export function labelStrokes(name: string, index: number, o: LabelOptions, font: Font): { strokes: Stroke[]; missing: string[] } {
+/** One label: outline, a string hole in the pointed end, and the name, which always reads left to right. */
+export function labelStrokes(name: string, o: LabelOptions, font: Font, mirrored = false): { strokes: Stroke[]; missing: string[] } {
   const strokes: Stroke[] = [];
-  if (o.outline) strokes.push(labelOutline(o.width, o.height, o.chamfer));
+  if (o.outline) strokes.push(labelOutline(o.width, o.height, o.chamfer, mirrored));
+  const flip = (x: number) => (mirrored ? o.width - x : x);
 
-  // hole near the cut corner, well inside the label
-  const hc = Math.max(o.chamfer * 0.85, o.holeRadius + 2.5);
-  if (o.hole) strokes.push(ellipse(hc, hc, o.holeRadius, o.holeRadius));
+  // hole on the centre line of the pointed end, where the label is wide enough for it
+  const hx = Math.max(0.6 * o.chamfer, o.holeRadius + 3);
+  if (o.hole) strokes.push(ellipse(flip(hx), o.height / 2, o.holeRadius, o.holeRadius));
 
-  // snowflake on the right, its seed different for every label
-  const flakeR = Math.min(o.flakeSize / 2, o.height / 2 - 2.5);
-  const flakeX = o.width - 2.5 - flakeR;
-  if (o.snowflake && flakeR > 0.5) {
-    const flake = snowflake({ branches: 2 + ((o.seed + index) % 3), detail: 2, seed: o.seed * 1000 + index });
-    strokes.push(...flake.map((s) => s.map((p) => ({ x: flakeX + p.x * flakeR, y: o.height / 2 + p.y * flakeR }))));
-  }
-
-  // name: between the hole and the snowflake, shrunk to fit, centred vertically
-  const left = o.hole ? hc + o.holeRadius + 2.5 : Math.max(3, o.chamfer * 0.6);
-  const right = o.snowflake ? flakeX - flakeR - 2.5 : o.width - 3;
+  // name between the pointed end (or the hole) and the square end, shrunk to fit, centred
+  const pointSide = o.hole ? hx + o.holeRadius + 2.5 : Math.max(3, 0.6 * o.chamfer);
+  const left = mirrored ? 3 : pointSide;
+  const right = mirrored ? o.width - pointSide : o.width - 3;
   const box = Math.max(1, right - left);
   let size = o.textSize;
   const natural = layoutText(name, font, { size, lineHeight: 1.2, align: "left", width: 0 }).width;
@@ -138,6 +134,92 @@ export function labelStrokes(name: string, index: number, o: LabelOptions, font:
   const l = layoutText(name, font, { size, lineHeight: 1.2, align: "center", width: box }, { x: left, y: o.height / 2 - ((font.ascent + font.descent) * size) / 2 });
   strokes.push(...l.strokes);
   return { strokes, missing: l.missing };
+}
+
+// ---- distances, to nest labels as closely as the gap allows ----
+
+function segmentDistance(a: Point, b: Point, c: Point, d: Point): number {
+  const cross = (o: Point, p: Point, q: Point) => (p.x - o.x) * (q.y - o.y) - (p.y - o.y) * (q.x - o.x);
+  const d1 = cross(a, b, c);
+  const d2 = cross(a, b, d);
+  const d3 = cross(c, d, a);
+  const d4 = cross(c, d, b);
+  if (d1 * d2 < 0 && d3 * d4 < 0) return 0; // they cross
+  const toSeg = (p: Point, s: Point, e: Point) => {
+    const dx = e.x - s.x;
+    const dy = e.y - s.y;
+    const l2 = dx * dx + dy * dy;
+    const t = l2 ? Math.max(0, Math.min(1, ((p.x - s.x) * dx + (p.y - s.y) * dy) / l2)) : 0;
+    return Math.hypot(p.x - s.x - t * dx, p.y - s.y - t * dy);
+  };
+  return Math.min(toSeg(a, c, d), toSeg(b, c, d), toSeg(c, a, b), toSeg(d, a, b));
+}
+
+/** Smallest distance between two outlines (0 when they cross). */
+export function outlineDistance(p: Stroke, q: Stroke): number {
+  let best = Infinity;
+  for (let i = 1; i < p.length; i++) for (let j = 1; j < q.length; j++) best = Math.min(best, segmentDistance(p[i - 1], p[i], q[j - 1], q[j]));
+  return best;
+}
+
+const shift = (s: Stroke, dx: number, dy: number) => s.map((p) => ({ x: p.x + dx, y: p.y + dy }));
+
+export type Placement = { x: number; y: number; mirrored: boolean };
+
+/**
+ * Where labels go on the sheet. "grid": rows and columns, all pointing left. "nested": columns in
+ * pairs, the left one pointing right and shifted half a label down, so its points slide into the
+ * notches between the labels of the right one, as far as the gap allows.
+ */
+export function placeLabels(o: { width: number; height: number; chamfer: number; gap: number; margin: number; layout: "grid" | "nested" | "best" }, sheet: { width: number; height: number }): Placement[] {
+  if (o.layout === "best") {
+    // nesting saves width but its shifted columns can lose a label at the bottom: keep the better one
+    const nested = placeLabels({ ...o, layout: "nested" }, sheet);
+    const grid = placeLabels({ ...o, layout: "grid" }, sheet);
+    return nested.length >= grid.length ? nested : grid;
+  }
+  const { width: w, height: h, gap, margin: m } = o;
+  const pitch = h + gap;
+  const fits = (x: number, y: number) => x >= m - 1e-9 && y >= m - 1e-9 && x + w <= sheet.width - m + 1e-9 && y + h <= sheet.height - m + 1e-9;
+  const column = (x: number, y0: number, mirrored: boolean) => {
+    const out: Placement[] = [];
+    for (let y = y0; y + h <= sheet.height - m + 1e-9; y += pitch) if (fits(x, y)) out.push({ x, y, mirrored });
+    return out;
+  };
+
+  if (o.layout === "grid") {
+    const out: Placement[] = [];
+    for (let x = m; x + w <= sheet.width - m + 1e-9; x += w + gap) out.push(...column(x, m, false));
+    return out;
+  }
+
+  // overlap of a pair: the most the right-pointing column can slide into the left-pointing one
+  const a0 = labelOutline(w, h, o.chamfer, false);
+  const b = labelOutline(w, h, o.chamfer, true);
+  const clear = (overlap: number) => {
+    const bx = -w + overlap; // B left of A (A at x = 0)
+    const bb = shift(b, bx, pitch / 2);
+    return outlineDistance(bb, a0) >= gap - 1e-6 && outlineDistance(bb, shift(a0, 0, pitch)) >= gap - 1e-6;
+  };
+  let lo = -gap;
+  let hi = w;
+  if (!clear(lo)) lo = -gap;
+  for (let i = 0; i < 40; i++) {
+    const mid = (lo + hi) / 2;
+    if (clear(mid)) lo = mid;
+    else hi = mid;
+  }
+  const overlap = lo;
+
+  const out: Placement[] = [];
+  for (let x = m; x + w <= sheet.width - m + 1e-9; ) {
+    out.push(...column(x, m + pitch / 2, true)); // pointing right, half a label down
+    const ax = x + w - overlap;
+    if (ax + w > sheet.width - m + 1e-9) break;
+    out.push(...column(ax, m, false)); // pointing left
+    x = ax + w + gap;
+  }
+  return out;
 }
 
 export const LABEL_NODES: NodeDef[] = [
@@ -158,22 +240,29 @@ export const LABEL_NODES: NodeDef[] = [
     type: "cookieLabels",
     label: "Cookie labels",
     description:
-      "A sheet of stackable gift labels, one per name: the top-left corner cut off, a string hole there, the name, and a different snowflake on each.",
+      "A sheet of gift labels, one per name: the left end cut to a point or trapezoid with a string hole, the name on the rest. Nested pairs of columns interlock their points to save space.",
     inputs: [],
     outputs: [{ name: "drawing", type: "drawing" }],
     params: {
-      names: { kind: "text", label: "Names (one per line)", default: "Anna\nBen\nClara\nDavid", multiline: true },
+      names: { kind: "text", label: "Names (one per line)", default: "Anna\nBen\nClara\nDavid\nEmil\nFrida", multiline: true },
       font: { kind: "font", label: "Font", default: DEFAULT_FONT },
       textSize: { kind: "number", label: "Name size", default: 8, min: 2, max: 30, step: 0.5, unit: "mm (shrinks to fit)" },
-      width: { kind: "number", label: "Label width", default: 70, min: 20, max: 200, step: 1, unit: "mm" },
-      height: { kind: "number", label: "Label height", default: 32, min: 10, max: 200, step: 1, unit: "mm" },
-      chamfer: { kind: "number", label: "Cut corner", default: 10, min: 0, max: 50, step: 0.5, unit: "mm" },
+      width: { kind: "number", label: "Label width", default: 60, min: 20, max: 200, step: 1, unit: "mm" },
+      height: { kind: "number", label: "Label height", default: 28, min: 10, max: 200, step: 1, unit: "mm" },
+      chamfer: { kind: "number", label: "Point depth", default: 14, min: 0, max: 100, step: 0.5, unit: "mm (½ height = triangle)" },
       hole: { kind: "boolean", label: "String hole", default: true },
       holeRadius: { kind: "number", label: "Hole radius", default: 2, min: 0.5, max: 8, step: 0.1, unit: "mm" },
-      snowflake: { kind: "boolean", label: "Snowflake", default: true },
-      flakeSize: { kind: "number", label: "Snowflake size", default: 24, min: 5, max: 100, step: 0.5, unit: "mm" },
-      seed: { kind: "number", label: "Snowflake seed", default: 1, min: 1, max: 9999, step: 1 },
       outline: { kind: "boolean", label: "Cut outline", default: true },
+      layout: {
+        kind: "select",
+        label: "Layout",
+        default: "best",
+        options: [
+          { value: "best", label: "best fit (whichever holds more)" },
+          { value: "nested", label: "nested pairs (points interlock)" },
+          { value: "grid", label: "grid" },
+        ],
+      },
       gap: { kind: "number", label: "Gap between labels", default: 3, min: 0, max: 30, step: 0.5, unit: "mm" },
       margin: { kind: "number", label: "Sheet margin", default: 4, min: 0, max: 30, step: 0.5, unit: "mm" },
       ...SHEET_PARAMS,
@@ -181,25 +270,23 @@ export const LABEL_NODES: NodeDef[] = [
     compute(_, p, ctx) {
       const font = fontOf(ctx, p.font);
       const sheet = paperSize({ size: p.paper, orientation: p.orientation });
-      const o = p as unknown as LabelOptions & { gap: number; margin: number; names: string };
+      const o = p as unknown as LabelOptions & { gap: number; margin: number; layout: "grid" | "nested" | "best" };
       const names = String(p.names)
         .split(/\r?\n/)
         .map((n) => n.trim())
         .filter(Boolean);
-      const cols = Math.max(0, Math.floor((sheet.width - 2 * o.margin + o.gap) / (o.width + o.gap)));
-      const rows = Math.max(0, Math.floor((sheet.height - 2 * o.margin + o.gap) / (o.height + o.gap)));
+      const spots = placeLabels(o, sheet);
       const strokes: Stroke[] = [];
       const missing = new Set<string>();
-      const fit = Math.min(names.length, cols * rows);
+      const fit = Math.min(names.length, spots.length);
       for (let i = 0; i < fit; i++) {
-        const x = o.margin + (i % cols) * (o.width + o.gap);
-        const y = o.margin + Math.floor(i / cols) * (o.height + o.gap);
-        const label = labelStrokes(names[i], i, o, font);
-        strokes.push(...label.strokes.map((s) => s.map((q) => ({ x: q.x + x, y: q.y + y }))));
+        const { x, y, mirrored } = spots[i];
+        const label = labelStrokes(names[i], o, font, mirrored);
+        strokes.push(...label.strokes.map((s) => shift(s, x, y)));
         label.missing.forEach((m) => missing.add(m));
       }
       const notes = [
-        ...(names.length > fit ? [`${names.length - fit} of ${names.length} names do not fit on this sheet (${cols * rows} labels)`] : []),
+        ...(names.length > fit ? [`${names.length - fit} of ${names.length} names do not fit on this sheet (${spots.length} labels)`] : []),
         ...(missing.size ? [`font lacks ${[...missing].join(" ")}`] : []),
       ];
       return { drawing: { paper: sheet, strokes, notes } satisfies PaperDrawing };

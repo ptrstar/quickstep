@@ -16,7 +16,17 @@ const mmss = (s: number) => {
 };
 
 /** Total time split into drawing, travel and pen, with the figures that matter; details folded away. */
-export function EstimateCard({ stats: s, job, liveTime, running }: { stats: SimStats; job: Job; liveTime?: number; running: boolean }) {
+/** Saves the job's bytes (what "Start plotting" sends) as a .qs file. */
+function downloadBytes(bytes: Uint8Array, filename: string) {
+  const url = URL.createObjectURL(new Blob([bytes.slice()], { type: "application/octet-stream" }));
+  const a = document.createElement("a");
+  a.href = url;
+  a.download = filename;
+  a.click();
+  URL.revokeObjectURL(url);
+}
+
+export function EstimateCard({ stats: s, job, liveTime, running, name }: { stats: SimStats; job: Job; liveTime?: number; running: boolean; name: string }) {
   const parts = [
     { label: "drawing", value: s.drawTime, color: "var(--t-lines)" },
     { label: "travel", value: s.travelTime, color: "var(--t-image)" },
@@ -84,6 +94,9 @@ export function EstimateCard({ stats: s, job, liveTime, running }: { stats: SimS
           <span>step y {(s.maxStepRateY / 1000).toFixed(1)} kHz</span>
         </div>
       </details>
+      <button type="button" onClick={() => downloadBytes(job.bytes, `${name.replace(/[^\w\- ]+/g, "_") || "job"}.qs`)} title="The exact bytes Start plotting sends: parameters, drawing, pause points">
+        Download QUICKSTEP (.qs)
+      </button>
     </section>
   );
 }

@@ -217,3 +217,13 @@ describe("presets and blocks", () => {
     expect(flatten(added).nodes).toHaveLength(2);
   });
 });
+
+describe("node catalogue", () => {
+  it("every node in the add menu has a section and a description", async () => {
+    const { NODE_DEFS, CATEGORIES } = await import("./nodes");
+    for (const d of NODE_DEFS.filter((n) => !n.hidden)) {
+      expect(CATEGORIES as readonly string[], d.type).toContain(d.category);
+      expect(d.description.length, d.type).toBeGreaterThan(10);
+    }
+  });
+});

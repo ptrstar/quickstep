@@ -6,8 +6,7 @@
 
 .menu {
   position: fixed;
-  width: 250px;
-  max-height: 360px;
+  width: 280px;
   display: flex;
   flex-direction: column;
   gap: 6px;
@@ -22,8 +21,16 @@
   width: 100%;
 }
 
+/* min-height 0 lets the list shrink inside the menu and scroll (otherwise it runs off-screen) */
 .list {
+  flex: 1 1 auto;
+  min-height: 0;
   overflow-y: auto;
+  display: flex;
+  flex-direction: column;
+}
+
+.group {
   display: flex;
   flex-direction: column;
 }

@@ -5,7 +5,10 @@ import { NeedsInput } from "../types";
 import { canny, traceEdges } from "./edges";
 import { hatch } from "./hatching";
 import { distanceTransform, rasterize } from "./ink";
-import { framed, harmonograph, repeat, spirograph, waveSpiral, whirl } from "./generative";
+import { framed, harmonograph, repeat, type RepeatOptions, spirograph, waveSpiral, whirl } from "./generative";
+import { GRAY_NODES } from "./grayops";
+import { LABEL_NODES } from "./labels";
+import { SHAPE_NODES } from "./shapes";
 import { drawMarks } from "./marks";
 import { stipple, tour } from "./stipple";
 import { optimizeStrokes, smooth, strokeLength, travelLength } from "./optimize";
@@ -497,8 +500,12 @@ const repeatNode: NodeDef = {
     copies: { kind: "number", label: "Copies", default: 12, min: 1, max: 200, step: 1 },
     rotate: { kind: "number", label: "Turn per copy", default: 30, min: -180, max: 180, step: 0.5, unit: "°" },
     scale: { kind: "number", label: "Scale per copy", default: 1, min: 0.5, max: 1.5, step: 0.005, unit: "×" },
+    jitter: { kind: "number", label: "Random offset", default: 0, min: 0, max: 0.5, step: 0.005, unit: "× size" },
+    jitterTurn: { kind: "number", label: "Random turn", default: 0, min: 0, max: 180, step: 0.5, unit: "± °" },
+    jitterScale: { kind: "number", label: "Random scale", default: 0, min: 0, max: 0.9, step: 0.01, unit: "± ×" },
+    seed: { kind: "number", label: "Random seed", default: 1, min: 1, max: 9999, step: 1 },
   },
-  compute: (inp, p) => ({ lines: repeat(inp.lines as Lines, { copies: p.copies as number, rotate: p.rotate as number, scale: p.scale as number }) }),
+  compute: (inp, p) => ({ lines: repeat(inp.lines as Lines, p as unknown as RepeatOptions) }),
   summary: pointsSummary,
 };
 
@@ -515,6 +522,68 @@ const outputNode: NodeDef = {
   compute: () => ({}),
 };
 
-export const NODE_DEFS: NodeDef[] = [outputNode, image, toGray, invertNode, contrastNode, blurNode, amplifyLine, edges, hatching, ink, stippling, spirographNode, harmonographNode, waveSpiralNode, whirlNode, repeatNode, paper, textNode, postcardNode, mergeNode, optimize];
+/** Where each node appears in the add-node menu. */
+export const CATEGORIES = ["Sources", "Image", "Image → lines", "Generative", "Lines", "Drawing", "Text & layouts"] as const;
+const CATEGORY: Record<string, (typeof CATEGORIES)[number]> = {
+  image: "Sources",
+  gradient: "Sources",
+  grayscale: "Image",
+  invert: "Image",
+  contrast: "Image",
+  levels: "Image",
+  blur: "Image",
+  sharpen: "Image",
+  threshold: "Image",
+  posterize: "Image",
+  combine: "Image",
+  crop: "Image",
+  orient: "Image",
+  amplifyLine: "Image → lines",
+  edges: "Image → lines",
+  hatching: "Image → lines",
+  ink: "Image → lines",
+  stipple: "Image → lines",
+  spirograph: "Generative",
+  harmonograph: "Generative",
+  waveSpiral: "Generative",
+  whirl: "Generative",
+  snowflake: "Generative",
+  repeat: "Lines",
+  paper: "Lines",
+  shape: "Drawing",
+  transform: "Drawing",
+  merge: "Drawing",
+  optimize: "Drawing",
+  text: "Text & layouts",
+  postcard: "Text & layouts",
+  cookieLabels: "Text & layouts",
+};
+
+export const NODE_DEFS: NodeDef[] = [
+  outputNode,
+  image,
+  toGray,
+  invertNode,
+  contrastNode,
+  blurNode,
+  ...GRAY_NODES,
+  amplifyLine,
+  edges,
+  hatching,
+  ink,
+  stippling,
+  spirographNode,
+  harmonographNode,
+  waveSpiralNode,
+  whirlNode,
+  repeatNode,
+  paper,
+  ...SHAPE_NODES,
+  textNode,
+  postcardNode,
+  ...LABEL_NODES,
+  mergeNode,
+  optimize,
+].map((d) => ({ ...d, category: d.category ?? CATEGORY[d.type] }));
 
 export const registry: Registry = new Map(NODE_DEFS.map((d) => [d.type, d]));

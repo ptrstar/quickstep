@@ -1,5 +1,6 @@
 import type { Point, Stroke } from "../../geometry";
 import type { Lines } from "../types";
+import { random } from "./stipple";
 
 const gcd = (a: number, b: number): number => (b === 0 ? Math.abs(a) : gcd(b, a % b));
 
@@ -97,20 +98,39 @@ export function whirl(o: { corners: number; levels: number; step: number; rotati
   return strokes;
 }
 
+export type RepeatOptions = {
+  copies: number;
+  rotate: number;
+  scale: number;
+  /** Random shift of each copy, as a fraction of the frame size. */
+  jitter?: number;
+  /** Random extra turn of each copy, ± degrees. */
+  jitterTurn?: number;
+  /** Random extra scale of each copy, ± fraction. */
+  jitterScale?: number;
+  seed?: number;
+};
+
 /**
  * Copies of the lines around the frame's centre, each turned by `rotate` degrees and scaled by
- * `scale` from the previous one: rosettes from any shape. The frame grows to hold every copy.
+ * `scale` from the previous one: rosettes from any shape. Optional random offset, turn and scale
+ * per copy (seeded, so it is reproducible). The frame grows to hold every copy.
  */
-export function repeat(lines: Lines, o: { copies: number; rotate: number; scale: number }): Lines {
+export function repeat(lines: Lines, o: RepeatOptions): Lines {
   const c = { x: lines.width / 2, y: lines.height / 2 };
+  const size = Math.max(lines.width, lines.height);
+  const rnd = random(o.seed ?? 1);
+  const pm = () => 2 * rnd() - 1; // −1 … 1
   const out: Stroke[] = [];
   for (let k = 0; k < o.copies; k++) {
-    const a = (k * o.rotate * Math.PI) / 180;
-    const s = Math.pow(o.scale, k);
+    const a = ((k * o.rotate + (o.jitterTurn ?? 0) * pm()) * Math.PI) / 180;
+    const s = Math.pow(o.scale, k) * (1 + (o.jitterScale ?? 0) * pm());
+    const ox = (o.jitter ?? 0) * size * pm();
+    const oy = (o.jitter ?? 0) * size * pm();
     const cos = Math.cos(a) * s;
     const sin = Math.sin(a) * s;
     for (const st of lines.strokes) {
-      out.push(st.map((p) => ({ x: c.x + (p.x - c.x) * cos - (p.y - c.y) * sin, y: c.y + (p.x - c.x) * sin + (p.y - c.y) * cos })));
+      out.push(st.map((p) => ({ x: c.x + ox + (p.x - c.x) * cos - (p.y - c.y) * sin, y: c.y + oy + (p.x - c.x) * sin + (p.y - c.y) * cos })));
     }
   }
   // keep the original centre in the middle of the new frame

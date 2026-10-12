@@ -3,7 +3,7 @@ export * from "./doc";
 export * from "./group";
 export * from "./evaluate";
 export * from "./preset";
-export { inkLength, NODE_DEFS, PAPER_SIZES, paperSize, registry } from "./nodes";
+export { CATEGORIES, inkLength, NODE_DEFS, PAPER_SIZES, paperSize, registry } from "./nodes";
 export * from "./path";
 export * from "./thumbs";
 export * from "./defaults";

@@ -1,7 +1,7 @@
 "use client";
 
 import { useEffect, useState } from "react";
-import { type Block, crosshatch, defaultPipeline, edgeSketch, generative, inkDrawing, rosette, stippling, parseBlock, parsePreset, type Preset, registry, toPreset } from "@/core/graph";
+import { type Block, cookieLabels, crosshatch, defaultPipeline, edgeSketch, generative, inkDrawing, rosette, stippling, parseBlock, parsePreset, type Preset, registry, toPreset } from "@/core/graph";
 
 const PRESETS_KEY = "quickstep.presets";
 const BLOCKS_KEY = "quickstep.blocks";
@@ -19,6 +19,7 @@ export function builtInPresets(): Preset[] {
     toPreset(registry, "Wave spiral", generative(registry, "waveSpiral")),
     toPreset(registry, "Whirl", generative(registry, "whirl")),
     toPreset(registry, "Rosette", rosette(registry)),
+    toPreset(registry, "Cookie labels", cookieLabels(registry)),
   ];
 }
 

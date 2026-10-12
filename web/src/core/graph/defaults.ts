@@ -61,6 +61,11 @@ export function generative(registry: Registry, source: string, params: Record<st
   return ensureOutput(registry, chain(registry, [source, "paper", "optimize"], { [source]: params }));
 }
 
+/** A sheet of Christmas cookie labels, optimized for plotting. */
+export function cookieLabels(registry: Registry): GraphDoc {
+  return ensureOutput(registry, chain(registry, ["cookieLabels", "optimize"]));
+}
+
 /** A spirograph turned into a shrinking, rotating tunnel. */
 export function rosette(registry: Registry): GraphDoc {
   return ensureOutput(

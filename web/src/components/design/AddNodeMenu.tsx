@@ -2,7 +2,7 @@
 
 import { useState } from "react";
 import type { Point } from "@/core/geometry";
-import type { Block, DataType, NodeDef } from "@/core/graph";
+import { type Block, CATEGORIES, type DataType, type NodeDef } from "@/core/graph";
 import styles from "./AddNodeMenu.module.css";
 import { TYPE_COLOR } from "./layout";
 
@@ -30,12 +30,16 @@ export function AddNodeMenu({
   const usable = blocks.filter((b) => (!accepts || b.group.inputs.some((p) => p.type === accepts)) && (!q || b.name.toLowerCase().includes(q)));
   const first: MenuPick | undefined = nodes[0] ? { kind: "node", type: nodes[0].type } : usable[0] && { kind: "block", block: usable[0] };
 
-  const left = Math.min(at.x, (typeof window !== "undefined" ? window.innerWidth : 1200) - 260);
-  const top = Math.min(at.y, (typeof window !== "undefined" ? window.innerHeight : 800) - 360);
+  const vw = typeof window !== "undefined" ? window.innerWidth : 1200;
+  const vh = typeof window !== "undefined" ? window.innerHeight : 800;
+  const height = Math.min(560, vh * 0.7);
+  const left = Math.max(8, Math.min(at.x, vw - 290));
+  const top = Math.max(8, Math.min(at.y, vh - height - 8));
+  const sections = [...CATEGORIES, undefined].map((c) => ({ title: c ?? "Other", defs: nodes.filter((d) => d.category === c || (!c && !CATEGORIES.includes(d.category as never))) }));
 
   return (
     <div className={styles.backdrop} onPointerDown={onClose}>
-      <div className={styles.menu} style={{ left, top }} onPointerDown={(e) => e.stopPropagation()} role="dialog" aria-label="Add a node">
+      <div className={styles.menu} style={{ left, top, maxHeight: height }} onPointerDown={(e) => e.stopPropagation()} role="dialog" aria-label="Add a node">
         <input
           autoFocus
           type="text"
@@ -48,15 +52,22 @@ export function AddNodeMenu({
           }}
         />
         <div className={styles.list}>
-          {nodes.map((d) => (
-            <button key={d.type} type="button" onClick={() => onPick({ kind: "node", type: d.type })} title={d.description}>
-              <span className={styles.dot} style={{ background: d.outputs[0] ? TYPE_COLOR[d.outputs[0].type] : "var(--muted)" }} />
-              {d.label}
-              <small>
-                {d.inputs.map((p) => p.type).join(", ") || "source"} → {d.outputs.map((p) => p.type).join(", ")}
-              </small>
-            </button>
-          ))}
+          {sections
+            .filter((s) => s.defs.length > 0)
+            .map((s) => (
+              <div key={s.title} className={styles.group}>
+                <div className={styles.section}>{s.title}</div>
+                {s.defs.map((d) => (
+                  <button key={d.type} type="button" onClick={() => onPick({ kind: "node", type: d.type })} title={d.description}>
+                    <span className={styles.dot} style={{ background: d.outputs[0] ? TYPE_COLOR[d.outputs[0].type] : "var(--muted)" }} />
+                    {d.label}
+                    <small>
+                      {d.inputs.map((p) => p.type).join(", ") || "source"} → {d.outputs.map((p) => p.type).join(", ")}
+                    </small>
+                  </button>
+                ))}
+              </div>
+            ))}
           {usable.length > 0 && <div className={styles.section}>Blocks</div>}
           {usable.map((b) => (
             <button key={b.name} type="button" onClick={() => onPick({ kind: "block", block: b })}>

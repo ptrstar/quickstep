@@ -162,3 +162,16 @@
   width: 100%;
   border-radius: 6px;
 }
+
+.scale {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 10px;
+  font-size: 13px;
+  color: var(--text-2);
+}
+
+.scale input {
+  width: 220px;
+}

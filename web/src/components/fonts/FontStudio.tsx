@@ -27,6 +27,24 @@ export function FontStudio({
 }) {
   const [char, setChar] = useState("a");
   const [sample, setSample] = useState("Frohe Weihnachten! Liebe Grüsse");
+  const [padScale, setPadScale] = useState(1);
+  useEffect(() => {
+    try {
+      const saved = Number(localStorage.getItem("quickstep.padScale"));
+      // eslint-disable-next-line react-hooks/set-state-in-effect -- storage only exists on the client
+      if (saved >= 0.15 && saved <= 1) setPadScale(saved);
+    } catch {
+      // no storage
+    }
+  }, []);
+  const changePadScale = (v: number) => {
+    setPadScale(v);
+    try {
+      localStorage.setItem("quickstep.padScale", String(v));
+    } catch {
+      // no storage
+    }
+  };
   const importer = useRef<HTMLInputElement>(null);
   const composed = useMemo(() => composedGlyphs(font), [font]);
   const strokes = font.glyphs[char] ?? [];
@@ -158,7 +176,12 @@ export function FontStudio({
               Next ›
             </button>
           </div>
-          <WritingPad char={char} strokes={strokes} onStroke={(s) => setStrokes([...strokes, s])} />
+          <label className={styles.scale}>
+            Pad size
+            <input type="range" min={0.15} max={1} step={0.01} value={padScale} onChange={(e) => changePadScale(e.target.valueAsNumber)} />
+            <span className={styles.muted}>{Math.round(padScale * 100)} % · write at your natural size; the font comes out the same</span>
+          </label>
+          <WritingPad char={char} strokes={strokes} onStroke={(s) => setStrokes([...strokes, s])} scale={padScale} />
         </section>
 
         <aside className={styles.side}>

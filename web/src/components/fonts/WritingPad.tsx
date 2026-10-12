@@ -14,7 +14,18 @@ const WIDTH_UNITS = 1100;
  * Write one character. Guide lines show ascender, cap height, x-height, baseline and descender; a
  * faint printed letter behind shows the size. Each pen stroke is cleaned and stored in font units.
  */
-export function WritingPad({ char, strokes, onStroke }: { char: string; strokes: Stroke[]; onStroke: (s: Stroke) => void }) {
+export function WritingPad({
+  char,
+  strokes,
+  onStroke,
+  scale = 1,
+}: {
+  char: string;
+  strokes: Stroke[];
+  onStroke: (s: Stroke) => void;
+  /** 1 fills the pad; smaller writes at a more natural size. The font is the same either way. */
+  scale?: number;
+}) {
   const box = useRef<HTMLDivElement>(null);
   const canvas = useRef<HTMLCanvasElement>(null);
   const [size, setSize] = useState({ width: 0, height: 0 });
@@ -28,7 +39,7 @@ export function WritingPad({ char, strokes, onStroke }: { char: string; strokes:
   }, []);
 
   // font units ↔ canvas pixels
-  const k = Math.min(size.height / (TOP - BOTTOM), size.width / WIDTH_UNITS) || 1;
+  const k = (Math.min(size.height / (TOP - BOTTOM), size.width / WIDTH_UNITS) || 1) * scale;
   const ox = (size.width - WIDTH_UNITS * k) / 2;
   const oy = (size.height - (TOP - BOTTOM) * k) / 2;
   const toPx = (p: Point) => ({ x: ox + p.x * k, y: oy + (TOP - p.y) * k });
@@ -42,8 +53,11 @@ export function WritingPad({ char, strokes, onStroke }: { char: string; strokes:
     c.height = size.height * dpr;
     const ctx = c.getContext("2d")!;
     ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
-    ctx.fillStyle = "#fbfbf8";
+    ctx.fillStyle = "#2a2e35";
     ctx.fillRect(0, 0, size.width, size.height);
+    // the writing area itself (smaller than the pad when scaled down)
+    ctx.fillStyle = "#fbfbf8";
+    ctx.fillRect(ox, oy, WIDTH_UNITS * k, (TOP - BOTTOM) * k);
 
     // guides
     const guide = (y: number, label: string, dash: number[], alpha: number) => {
@@ -52,13 +66,15 @@ export function WritingPad({ char, strokes, onStroke }: { char: string; strokes:
       ctx.strokeStyle = `rgba(59, 110, 200, ${alpha})`;
       ctx.lineWidth = 1;
       ctx.beginPath();
-      ctx.moveTo(0, py);
-      ctx.lineTo(size.width, py);
+      ctx.moveTo(ox, py);
+      ctx.lineTo(ox + WIDTH_UNITS * k, py);
       ctx.stroke();
       ctx.setLineDash([]);
-      ctx.fillStyle = `rgba(59, 110, 200, ${alpha + 0.2})`;
-      ctx.font = "11px var(--font-mono), monospace";
-      ctx.fillText(label, 6, py - 4);
+      if (scale >= 0.45) {
+        ctx.fillStyle = `rgba(59, 110, 200, ${alpha + 0.2})`;
+        ctx.font = "11px var(--font-mono), monospace";
+        ctx.fillText(label, ox + 6, py - 4);
+      }
     };
     guide(METRICS.ascent, "ascender", [6, 6], 0.35);
     guide(METRICS.capHeight, "capitals", [3, 5], 0.35);
@@ -75,7 +91,7 @@ export function WritingPad({ char, strokes, onStroke }: { char: string; strokes:
     // strokes
     ctx.strokeStyle = "#1b1d22";
     ctx.fillStyle = "#1b1d22";
-    ctx.lineWidth = Math.max(2, 18 * k);
+    ctx.lineWidth = Math.max(1.5, 18 * k);
     ctx.lineCap = "round";
     ctx.lineJoin = "round";
     for (const s of [...strokes, ...(current.current ? [current.current] : [])]) {

@@ -1,0 +1,164 @@
+.overlay {
+  position: fixed;
+  inset: 0;
+  z-index: 40;
+  display: flex;
+  flex-direction: column;
+  background: var(--bg);
+}
+
+.head {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 10px 14px;
+  padding: 10px 20px;
+  background: var(--bar);
+  border-bottom: 1px solid var(--border);
+}
+
+.head input {
+  min-width: 180px;
+}
+
+.grow {
+  flex: 1 1 0;
+}
+
+.muted {
+  color: var(--muted);
+  font-size: 13px;
+}
+
+.body {
+  flex: 1 1 auto;
+  min-height: 0;
+  display: grid;
+  grid-template-columns: 260px minmax(0, 1fr) 320px;
+  gap: 16px;
+  padding: 16px;
+}
+
+@media (max-width: 1100px) {
+  .body {
+    grid-template-columns: 1fr;
+    overflow-y: auto;
+  }
+}
+
+.chars {
+  min-height: 0;
+  overflow-y: auto;
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  padding: 12px;
+  background: var(--panel);
+  border: 1px solid var(--border);
+  border-radius: 12px;
+}
+
+.chars h3 {
+  font-size: 13px;
+  font-weight: 600;
+  margin-bottom: 6px;
+}
+
+.chars h3 small {
+  color: var(--muted);
+  font-weight: 400;
+}
+
+.grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(30px, 1fr));
+  gap: 4px;
+}
+
+.grid button {
+  height: 32px;
+  padding: 0;
+  font-size: 15px;
+  color: var(--muted);
+}
+
+.grid button.drawn {
+  color: var(--text);
+  border-color: #2f4a37;
+  background: #1e2a22;
+}
+
+.grid button.composed {
+  color: var(--accent-text);
+  border-style: dashed;
+}
+
+.grid button[aria-pressed="true"] {
+  outline: 2px solid var(--accent);
+}
+
+.writing {
+  min-width: 0;
+  min-height: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  padding: 12px;
+  background: var(--panel);
+  border: 1px solid var(--border);
+  border-radius: 12px;
+}
+
+.bar {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 10px;
+}
+
+.big {
+  font-size: 28px;
+  font-weight: 600;
+  min-width: 36px;
+  text-align: center;
+}
+
+.pad {
+  position: relative;
+  flex: 1 1 auto;
+  min-height: 360px;
+  border-radius: 8px;
+  overflow: hidden;
+}
+
+.pad canvas {
+  position: absolute;
+  inset: 0;
+  touch-action: none;
+  cursor: crosshair;
+}
+
+.side {
+  min-height: 0;
+  overflow-y: auto;
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  padding: 12px;
+  background: var(--panel);
+  border: 1px solid var(--border);
+  border-radius: 12px;
+}
+
+.field {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  font-size: 13px;
+  color: var(--text-2);
+}
+
+.preview {
+  width: 100%;
+  border-radius: 6px;
+}

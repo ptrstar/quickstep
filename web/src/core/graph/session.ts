@@ -34,6 +34,8 @@ export class GraphSession {
   }
 
   addFont(key: string, font: Font) {
+    // the same key may now mean different letters (an edited handwriting font): recompute everything
+    if (this.fonts.has(key)) this.evaluator.clear();
     this.fonts.set(key, font);
   }
 

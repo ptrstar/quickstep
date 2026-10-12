@@ -2,7 +2,10 @@
 
 import { useEffect, useRef, useState } from "react";
 import { parsePreset, PresetError, registry, toPreset } from "@/core/graph";
+import { toSvgFont } from "@/core/text/handwriting";
 import styles from "./App.module.css";
+import { FontStudio } from "./fonts/FontStudio";
+import { HAND_FONT_KEY, useHandFont } from "./fonts/useHandFont";
 import { DesignScreen } from "./design/DesignScreen";
 import { downloadJson, useLibrary } from "./design/library";
 import { useGraphEngine } from "./design/useGraphEngine";
@@ -31,6 +34,16 @@ export function App() {
   const library = useLibrary();
   const plotter = usePlotter();
   const [assetNames, setAssetNames] = useState(new Map<string, string>());
+  const [handFont, setHandFont] = useHandFont();
+  const [studio, setStudio] = useState(false);
+  const handRegistered = useRef(false);
+
+  // a handwriting font saved earlier is available right away, so nodes using it keep working
+  useEffect(() => {
+    if (handRegistered.current || Object.keys(handFont.glyphs).length === 0) return;
+    handRegistered.current = true;
+    engine.addFontSvg(HAND_FONT_KEY, toSvgFont(handFont));
+  }, [handFont, engine]);
   const importInput = useRef<HTMLInputElement>(null);
 
   useEffect(() => {
@@ -103,6 +116,9 @@ export function App() {
           <button type="button" onClick={() => downloadJson(`${project.name}.quickstep.json`, toPreset(registry, project.name, project.doc))} title="Download the pipeline as a file">
             Export
           </button>
+          <button type="button" onClick={() => setStudio(true)} title="Capture a single-line font from your handwriting">
+            ✎ Handwriting font
+          </button>
           <button type="button" onClick={() => importInput.current?.click()} title="Load a pipeline file">
             Import
           </button>
@@ -136,6 +152,20 @@ export function App() {
         />
       ) : (
         <PlotScreen plotter={plotter} drawing={engine.drawing} name={project.name} onBackToDesign={() => setStep("design")} />
+      )}
+
+      {studio && (
+        <FontStudio
+          font={handFont}
+          onChange={setHandFont}
+          onUse={(svg) => {
+            engine.addFontSvg(HAND_FONT_KEY, svg);
+            handRegistered.current = true;
+            setMessage(`"${handFont.name}" is now in every font picker`);
+            setStudio(false);
+          }}
+          onClose={() => setStudio(false)}
+        />
       )}
 
       {message && (

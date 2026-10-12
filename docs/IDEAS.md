@@ -7,5 +7,9 @@
 - **Tone compensation near outlines**: an outline already darkens its surroundings, so lighten the
   hatching (raise the thresholds) within a few px of outlines.
 
-## Fonts
-- Own handwriting as a single-line font: glyph editor in the app (draw each character with mouse or tablet).
+## Fonts (handwriting studio: v1 done — capture, clean, compose accents, SVG font export/import)
+- Several versions per letter, picked at random while laying out text, so repeated letters differ (natural look).
+- Kerning pairs (e.g. "To", "Wa") from the drawn shapes, or adjustable per pair.
+- Joined script: entry/exit points per glyph so letters connect into one stroke.
+- Small random baseline/size/slant jitter as a text option.
+- Capture from a scan: write a sheet by hand, photograph it, cut cells and trace the centre lines.

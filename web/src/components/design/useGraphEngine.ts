@@ -60,7 +60,7 @@ export function useGraphEngine(doc: GraphDoc, onMessage: (text: string) => void 
       const msg = e.data;
       if (msg.type === "font") {
         if (msg.ok) {
-          setFonts((list) => (list.some((f) => f.key === msg.key) ? list : [...list, { key: msg.key, name: msg.name, kind: msg.kind, builtin: false }]));
+          setFonts((list) => [...list.filter((f) => f.key !== msg.key), { key: msg.key, name: msg.name, kind: msg.kind, builtin: BUILTIN_FONTS.some((b) => b.key === msg.key) }]);
           rerun();
         } else {
           message.current(`Could not read the font: ${msg.error}`);
@@ -117,7 +117,10 @@ export function useGraphEngine(doc: GraphDoc, onMessage: (text: string) => void 
     [post],
   );
 
-  return { ...state, fonts, addAsset, addFont };
+  /** Registers (or replaces) an SVG font under a fixed key, e.g. your handwriting font. */
+  const addFontSvg = useCallback((key: string, svg: string) => post({ type: "font", key, format: "svg", data: svg }), [post]);
+
+  return { ...state, fonts, addAsset, addFont, addFontSvg };
 }
 
 /** Decodes an image file into pixels, at most `maxSide` px on the longer side. */

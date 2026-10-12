@@ -37,6 +37,11 @@ export class Evaluator {
 
   constructor(private readonly registry: Registry) {}
 
+  /** Forget all cached results (e.g. a font was replaced under the same key). */
+  clear() {
+    this.cache.clear();
+  }
+
   run(doc: GraphDoc, ctx: ComputeContext): EvalResult {
     const flat = flatten(doc);
     const byId = new Map(flat.nodes.map((n) => [n.id, n]));

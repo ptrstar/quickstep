@@ -38,6 +38,12 @@ export function App() {
   const [studio, setStudio] = useState(false);
   const handRegistered = useRef(false);
 
+  // "?font" in the address opens the handwriting studio straight away (handy on a tablet)
+  useEffect(() => {
+    // eslint-disable-next-line react-hooks/set-state-in-effect -- the address is only known in the browser
+    if (new URLSearchParams(window.location.search).has("font")) setStudio(true);
+  }, []);
+
   // a handwriting font saved earlier is available right away, so nodes using it keep working
   useEffect(() => {
     if (handRegistered.current || Object.keys(handFont.glyphs).length === 0) return;

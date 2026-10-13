@@ -30,6 +30,13 @@ export function WritingPad({
   const canvas = useRef<HTMLCanvasElement>(null);
   const [size, setSize] = useState({ width: 0, height: 0 });
   const current = useRef<Point[] | null>(null);
+  const activePointer = useRef<number | null>(null);
+  // once a pen (Apple Pencil) is used, finger and palm touches no longer draw
+  const penSeen = useRef(false);
+  const accept = (e: React.PointerEvent) => {
+    if (e.pointerType === "pen") penSeen.current = true;
+    return !(penSeen.current && e.pointerType === "touch");
+  };
   const [, redraw] = useState(0);
 
   useEffect(() => {
@@ -121,18 +128,29 @@ export function WritingPad({
         style={{ width: size.width, height: size.height }}
         aria-label={`Writing area for ${char}`}
         onPointerDown={(e) => {
+          if (!accept(e) || activePointer.current !== null) return;
+          e.preventDefault();
+          activePointer.current = e.pointerId;
           e.currentTarget.setPointerCapture(e.pointerId);
           current.current = [point(e)];
           redraw((n) => n + 1);
         }}
         onPointerMove={(e) => {
-          if (!current.current) return;
+          if (!current.current || e.pointerId !== activePointer.current) return;
           const events = e.nativeEvent.getCoalescedEvents?.() ?? [e.nativeEvent];
           const r = canvas.current!.getBoundingClientRect();
           for (const ev of events) current.current.push(toUnits(ev.clientX - r.left, ev.clientY - r.top));
           redraw((n) => n + 1);
         }}
-        onPointerUp={() => {
+        onPointerCancel={(e) => {
+          if (e.pointerId !== activePointer.current) return;
+          activePointer.current = null;
+          current.current = null;
+          redraw((n) => n + 1);
+        }}
+        onPointerUp={(e) => {
+          if (e.pointerId !== activePointer.current) return;
+          activePointer.current = null;
           const s = current.current;
           current.current = null;
           if (s && s.length) onStroke(cleanStroke(s));
